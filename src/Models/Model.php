@@ -10,16 +10,30 @@ use NumPower\Lattice\Utils\EpochPrinter;
 
 abstract class Model implements IModel
 {
+    /**
+     * @var IOptimizer
+     */
     private IOptimizer $optimizer;
 
     /**
      * @var ILayer[]
      */
     protected array $layers = [];
+
+    /**
+     * @var ILoss
+     */
     private ILoss $lossFunction;
 
+    /**
+     * @var EpochPrinter
+     */
     private EpochPrinter $epochPrinter;
-    private bool $useGPU;
+
+    /**
+     * @var bool
+     */
+    protected bool $useGPU;
 
     public function __construct() {
         $this->epochPrinter = new EpochPrinter();
@@ -152,6 +166,7 @@ abstract class Model implements IModel
     /**
      * @param IOptimizer $optimizer
      * @param ILoss $loss
+     * @param bool $use_gpu
      * @return void
      */
     public function build(IOptimizer $optimizer, ILoss $loss, bool $use_gpu = False): void
