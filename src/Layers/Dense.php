@@ -76,7 +76,7 @@ class Dense extends Layer
     /**
      * @return void
      */
-    private function initializeWeights(): void
+    private function initializeWeights(bool $use_gpu): void
     {
         if(!isset($this->weightsInitializer)) {
             if (!$this->isOutputLayer) {
@@ -87,7 +87,7 @@ class Dense extends Layer
                 $this->weightsInitializer->setShape([$this->inputShape[count($this->inputShape) - 1], $this->units]);
             }
         }
-        $this->setWeights($this->weightsInitializer->initialize());
+        $this->setWeights($this->weightsInitializer->initialize($use_gpu));
     }
 
     /**
@@ -101,14 +101,15 @@ class Dense extends Layer
 
     /**
      * @param ILayer $previousLayer
-     * @param $isOutput
+     * @param bool $use_gpu
+     * @param bool $isOutput
      * @return void
      */
-    public function initialize(ILayer $previousLayer, $isOutput = false): void
+    public function initialize(ILayer $previousLayer, bool $use_gpu, bool $isOutput = false): void
     {
         $this->isOutputLayer = $isOutput;
         $this->setInputShape($previousLayer->generateOutputShape());
-        $this->initializeWeights();
+        $this->initializeWeights($use_gpu);
     }
 
     /**
@@ -133,11 +134,10 @@ class Dense extends Layer
         $previous_activation = $previousLayer->getActivation();
         if (count($error->shape()) == 1) {
             $delta = nd::multiply(nd::reshape($error, [1, count($error)]), $previousLayer->getActivationFunction()->derivative($previous_activation));
-            $delta = nd::transpose($delta);
+            //$delta = nd::transpose($delta);
         } else {
             $delta = nd::multiply($error, $previousLayer->getActivationFunction()->derivative($previous_activation));
         }
-
         $this->setDerivative(
             nd::dot(nd::transpose($this->getActivation()), $delta)
         );

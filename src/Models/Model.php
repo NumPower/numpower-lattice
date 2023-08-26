@@ -19,6 +19,7 @@ abstract class Model implements IModel
     private ILoss $lossFunction;
 
     private EpochPrinter $epochPrinter;
+    private bool $useGPU;
 
     public function __construct() {
         $this->epochPrinter = new EpochPrinter();
@@ -153,8 +154,9 @@ abstract class Model implements IModel
      * @param ILoss $loss
      * @return void
      */
-    public function build(IOptimizer $optimizer, ILoss $loss): void
+    public function build(IOptimizer $optimizer, ILoss $loss, bool $use_gpu = False): void
     {
+        $this->useGPU = $use_gpu;
         $this->setLossFunction($loss);
         $this->setOptimizer($optimizer);
         $layers = $this->layers();
@@ -167,7 +169,7 @@ abstract class Model implements IModel
             if (!array_key_exists($idx-1, $layers)) {
                 break;
             }
-            $layer->initialize($layers[$idx-1], ($idx == count($this->layers) - 1));
+            $layer->initialize($layers[$idx-1], $this->useGPU, ($idx == count($this->layers) - 1));
         }
     }
 }

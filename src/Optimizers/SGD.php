@@ -2,6 +2,7 @@
 
 namespace NumPower\Lattice\Optimizers;
 
+use \NDArray as nd;
 use NumPower\Lattice\Layers\ILayer;
 
 class SGD extends Optimizer
@@ -25,8 +26,15 @@ class SGD extends Optimizer
      */
     public function adjust(\NDArray $derivatives, ILayer $layer): void
     {
+        $lr = nd::zeros($derivatives->shape());
+        $lr->fill($this->learningRate);
+
+        if ($derivatives->isGPU()) {
+            $lr = $lr->gpu();
+        }
+
         $weights = $layer->getWeights();
-        $new_weights = $weights + ($derivatives * $this->learningRate);
+        $new_weights = $weights + ($derivatives * $lr);
         $layer->setWeights($new_weights);
     }
 }

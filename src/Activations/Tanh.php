@@ -14,6 +14,12 @@ class Tanh extends Activation
 
     function derivative(\NDArray $x): \NDArray
     {
-        return 1 - nd::tanh($x) ** 2;
+        $ones = nd::ones($x->shape());
+        $two = ($ones * 2);
+        if ($x->isGPU()) {
+            $two = $two->gpu();
+            $ones = $ones->gpu();
+        }
+        return $ones - nd::tanh($x) ** $two;
     }
 }

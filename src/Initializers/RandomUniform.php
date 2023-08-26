@@ -14,8 +14,12 @@ class RandomUniform extends Initializer
         $this->max = $max;
     }
 
-    function initialize(): \NDArray
+    function initialize(bool $use_gpu): \NDArray
     {
-        return nd::uniform($this->shape, low: $this->min, high: $this->max);
+        $a = nd::uniform($this->shape, low: $this->min, high: $this->max);
+        if ($use_gpu) {
+            $a = $a->gpu();
+        }
+        return $a;
     }
 }

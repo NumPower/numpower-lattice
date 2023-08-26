@@ -14,8 +14,12 @@ class RandomNormal extends Initializer
         $this->stddev = $stddev;
     }
 
-    function initialize(): \NDArray
+    function initialize(bool $use_gpu): \NDArray
     {
-        return nd::normal($this->shape, $this->mean, $this->stddev);
+        $a = nd::normal($this->shape, $this->mean, $this->stddev);
+        if ($use_gpu) {
+            $a = $a->gpu();
+        }
+        return $a;
     }
 }

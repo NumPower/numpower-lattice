@@ -29,7 +29,7 @@ class Input extends Layer
         return $this->inputShape;
     }
 
-    public function initialize(ILayer $nextLayer, $isOutput = false): void
+    public function initialize(ILayer $nextLayer, bool $use_gpu, bool $isOutput = false): void
     {
         // TODO: Implement initialize() method.
     }

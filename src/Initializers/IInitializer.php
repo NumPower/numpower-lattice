@@ -4,5 +4,5 @@ namespace NumPower\Lattice\Initializers;
 
 interface IInitializer
 {
-    function initialize(): \NDArray;
+    function initialize(bool $use_gpu): \NDArray;
 }

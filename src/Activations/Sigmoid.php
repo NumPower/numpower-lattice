@@ -15,7 +15,11 @@ class Sigmoid extends Activation
      * @return \NDArray
      */
     public function activate(\NDArray $x): \NDArray {
-        return 1 / (nd::exp(-$x) + 1);
+        $ones = nd::ones($x->shape());
+        if ($x->isGPU()) {
+            $ones = $ones->gpu();
+        }
+        return $ones / (nd::exp(nd::negative($x)) + $ones);
     }
 
     /**
@@ -24,6 +28,10 @@ class Sigmoid extends Activation
      */
     function derivative(\NDArray $x): \NDArray
     {
-        return $x * (1 - $x);
+        $ones = nd::ones($x->shape());
+        if ($x->isGPU()) {
+            $ones = $ones->gpu();
+        }
+        return $x * ($ones - $x);
     }
 }

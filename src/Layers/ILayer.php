@@ -6,7 +6,7 @@ use NumPower\Lattice\Activations\IActivation;
 
 interface ILayer
 {
-    function initialize(ILayer $previousLayer): void;
+    function initialize(ILayer $previousLayer, bool $use_gpu, bool $isOutput): void;
     function generateOutputShape(): array;
     function inputShape(): array;
     function forward(\NDArray $inputs): \NDArray;

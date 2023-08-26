@@ -32,7 +32,7 @@ class Stack extends Model
 
     }
 
-    public function fit(\NDArray $X, \NDArray $y, int $epochs = 10): void
+    public function fit(\NDArray $X, \NDArray $y, int $epochs = 10, bool $use_gpu = False): void
     {
         for ($current_epoch = 0; $current_epoch < $epochs; $current_epoch++) {
             $this->getEpochPrinter()->start($current_epoch, $epochs);
