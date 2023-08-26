@@ -1,0 +1,10 @@
+{
+  "autoload": {
+    "psr-4": {
+      "NumPower\\Lattice\\": "src/"
+    }
+  },
+  "require": {
+    "ext-numpower": "*"
+  }
+}
