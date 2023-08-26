@@ -6,6 +6,7 @@ use NumPower\Lattice\Layers\ILayer;
 use NumPower\Lattice\Layers\Input;
 use NumPower\Lattice\Losses\ILoss;
 use NumPower\Lattice\Optimizers\IOptimizer;
+use NumPower\Lattice\Utils\EpochPrinter;
 
 abstract class Model implements IModel
 {
@@ -16,6 +17,20 @@ abstract class Model implements IModel
      */
     protected array $layers = [];
     private ILoss $lossFunction;
+
+    private EpochPrinter $epochPrinter;
+
+    public function __construct() {
+        $this->epochPrinter = new EpochPrinter();
+    }
+
+    /**
+     * @return EpochPrinter
+     */
+    public function getEpochPrinter(): EpochPrinter
+    {
+        return $this->epochPrinter;
+    }
 
     public function setOptimizer(IOptimizer $optimizer): void
     {
@@ -111,6 +126,7 @@ abstract class Model implements IModel
             $this->backward($error);
             $sum_loss += $this->computeLoss($y[$idx], $outputs);
             $this->optimize();
+            $this->getEpochPrinter()->update($idx+1, count($x));
         }
         return $sum_loss / count($x);
     }

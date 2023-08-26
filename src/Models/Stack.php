@@ -9,13 +9,6 @@ use NumPower\Lattice\Optimizers\IOptimizer;
 class Stack extends Model
 {
     /**
-     * @param array $layers
-     */
-    public function __construct(array $layers = []) {
-
-    }
-
-    /**
      * @param ILayer $layer
      * @return Model
      */
@@ -42,8 +35,9 @@ class Stack extends Model
     public function fit(\NDArray $X, \NDArray $y, int $epochs = 10): void
     {
         for ($current_epoch = 0; $current_epoch < $epochs; $current_epoch++) {
-            print("Epoch ". $current_epoch + 1 . "/$epochs\n");
+            $this->getEpochPrinter()->start($current_epoch, $epochs);
             $loss = parent::trainStep([$X, $y]);
+            $this->getEpochPrinter()->stop();
             print("loss: $loss\n");
         }
     }

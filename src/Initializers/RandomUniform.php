@@ -16,6 +16,6 @@ class RandomUniform extends Initializer
 
     function initialize(): \NDArray
     {
-        return nd::normal($this->shape, $this->min, $this->max);
+        return nd::uniform($this->shape, low: $this->min, high: $this->max);
     }
 }
