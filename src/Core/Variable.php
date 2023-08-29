@@ -40,9 +40,24 @@ class Variable
     private \NDArray $array;
 
     /**
-     * @var Tape
+     * @var Operation
      */
-    private Tape $tape;
+    private Operation $tape;
+
+    /**
+     * @var array
+     */
+    private array $inputs;
+
+    /**
+     * @var bool
+     */
+    private bool $requireGrad;
+
+    /**
+     * @var nd|null
+     */
+    private ?\NDArray $grad;
 
     /**
      * @param string $name
@@ -50,16 +65,18 @@ class Variable
      * @param IInitializer|null $initializer
      * @param bool $trainable
      * @param IRegularizer|null $regularizer
+     * @param bool $requireGrad
      */
     public function __construct(
         string $name,
         array $shape,
         ?IInitializer $initializer = NULL,
         ?bool $trainable = False,
-        ?IRegularizer $regularizer = NULL
+        ?IRegularizer $regularizer = NULL,
+        bool $requireGrad = True
     )
     {
-        $this->tape = new Tape();
+        $this->requireGrad = $requireGrad;
         $this->name = $name;
         $this->shape = $shape;
         $this->trainable = $trainable;
@@ -87,14 +104,12 @@ class Variable
 
     /**
      * @param string $name
-     * @param array $args
      * @return Operation
-     * @throws ValueErrorException
      */
-    public function registerOperation(string $name, array $args): Operation
+    public function registerOperation(string $name): Operation
     {
-        $op = new Operation($name, $args);
-        $this->tape->add($op);
+        $op = new Operation($name, $this->inputs);
+        $this->tape = $op;
         return $op;
     }
 
@@ -103,7 +118,7 @@ class Variable
      * @param nd $array
      * @return Variable
      */
-    public static function fromArray(string $name, \NDArray $array): Variable {
+    public static function fromArray(\NDArray $array, string $name = "", bool $requireGrad = False): Variable {
         $variable = new Variable(
             name: $name,
             shape: $array->shape()
@@ -122,26 +137,16 @@ class Variable
     }
 
     /**
-     * @return void
-     */
-    public function clearTape(): void
-    {
-        $this->tape = [
-            $this->tape[0]
-        ];
-    }
-
-    /**
-     * @param nd $a
+     * @param Variable $a
+     * @param Variable $b
      * @return Variable
-     * @throws ValueErrorException
      */
-    public function dot(\NDArray $a): Variable
+    public static function dot(Variable $a, Variable $b): Variable
     {
-        $this->registerOperation("dot", [$a]);
-        $this->array = nd::dot($this->array, $a);
-        $this->updateShape();
-        return $this;
+        $new_var = Variable::fromArray(nd::dot($a->getArray(), $b->getArray()));
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation("dot");
+        return $new_var;
     }
 
     private function updateShape(): void
@@ -150,125 +155,108 @@ class Variable
     }
 
     /**
-     * @param nd $a
+     * @param Variable $a
+     * @param Variable $b
      * @return Variable
-     * @throws ValueErrorException
      */
-    public function denominatorDivide(\NDArray $a): Variable
+    public static function divide(Variable $a, Variable $b): Variable
     {
-        $this->registerOperation("denominator_divide", [$a]);
-        $this->array = $a / $this->array;
-        $this->updateShape();
-        return $this;
+        $new_var = Variable::fromArray( $a->getArray() / $b->getArray());
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation("divide");
+        return $new_var;
     }
 
     /**
-     * @param nd $a
+     * @param Variable $a
+     * @param Variable $b
+     * @return Variable
+     */
+    public static function power(Variable $a, Variable $b): Variable
+    {
+        $new_var = Variable::fromArray( $a->getArray() ** $b->getArray());
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation("power");
+        return $new_var;
+    }
+
+    /**
+     * @return Variable[]
+     */
+    public function getInputs(): array
+    {
+        return $this->inputs;
+    }
+
+    /**
+     * @param Variable $a
+     * @param Variable $b
+     * @return Variable
+     */
+    public static function subtract(Variable $a, Variable $b): Variable
+    {
+        $new_var = Variable::fromArray( $a->getArray() - $b->getArray());
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation("subtract");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
+     * @param Variable $b
      * @return $this
      * @throws ValueErrorException
      */
-    public function add(\NDArray $a): Variable
+    public static function add(Variable $a, Variable $b): Variable
     {
-        $this->registerOperation("add", [$a]);
-        $this->array = nd::add($this->array, $a);
-        $this->updateShape();
-        return $this;
+        $new_var = self::fromArray(nd::add($a->getArray(), $b->getArray()));
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation("add");
+        return $new_var;
+    }
+
+    /**
+     * @param array $val
+     * @return void
+     */
+    public function setInputs(array $val): void
+    {
+        $this->inputs = $val;
     }
 
     /**
      * @return $this
      * @throws ValueErrorException
      */
-    public function exp(): Variable
+    public static function exp(Variable $a): Variable
     {
-        $this->registerOperation("exp", []);
-        $this->array = nd::exp($this->array);
-        return $this;
+        $new_var = self::fromArray(nd::exp($a->getArray()));
+        $new_var->setInputs([$a]);
+        $new_var->registerOperation("exp");
+        return $new_var;
     }
 
     /**
-     * @return $this
-     * @throws ValueErrorException
+     * @param Variable $a
+     * @param Variable $b
+     * @return Variable
      */
-    public function negative(): Variable
-    {
-        $this->registerOperation("negative", []);
-        $this->array = nd::negative($this->array);
-        return $this;
+    public static function multiply(Variable $a, Variable $b): Variable {
+        $new_var = Variable::fromArray($a->getArray() * $b->getArray());
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation('multiply');
+        return $new_var;
     }
 
     /**
-     * @return Tape
+     * @return ?Operation
      */
-    public function getTape(): Tape
+    public function getOperation(): ?Operation
     {
-        return $this->tape;
-    }
-
-    /**
-     * @param $target
-     * @param $args
-     * @return nd
-     */
-    private static function _dot_derivative($target, $args): \NDArray
-    {
-        return $args[0];
-    }
-
-    /**
-     * @param $target
-     * @param $args
-     * @return nd
-     */
-    private static function _add_derivative($target, $args): \NDArray
-    {
-        return nd::ones($args[0]->shape());
-    }
-
-    /**
-     * @param $target
-     * @param $args
-     * @return nd
-     */
-    private static function _negative_derivative($target, $args): \NDArray
-    {
-        return -nd::ones($target->shape());
-    }
-
-    /**
-     * @param $target
-     * @param $args
-     * @return nd
-     */
-    private static function _exp_derivative($target, $args): \NDArray
-    {
-        return nd::exp($target);
-    }
-
-    /**
-     * @param $target
-     * @param $args
-     * @return nd
-     */
-    private static function _denominator_divide_derivative($target, $args): \NDArray
-    {
-        return (1 / $args[0]) - ($target / ($args[0] ** 2));
-    }
-
-    /**
-     * @param int $op_index
-     * @return nd
-     */
-    public function partialDiff(int $op_index): \NDArray
-    {
-        $current_val = $this->getArray();
-        $tape_head = $this->getTape()->getHead();
-        for($i = count($this->getTape()) - 1; $i >= $op_index; $i--) {
-            $op = $tape_head;
-            $current_val = call_user_func(self::class . "::_" .$op->getName()."_derivative", $current_val, $op->getArgs());
-            $tape_head = $tape_head->getNext();
+        if (!isset($this->tape)){
+            return NULL;
         }
-        return $current_val;
+        return $this->tape;
     }
 
     /**
@@ -283,16 +271,18 @@ class Variable
     }
 
     /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
      * @return nd
      */
     public function diff(): \NDArray {
-        $current_val = $this->getArray();
-        $tape_head = $this->getTape()->getHead();
-        while(isset($tape_head)) {
-            $current_val = call_user_func(self::class . "::_" .$tape_head->getName()."_derivative", $current_val, $tape_head->getArgs());
-            $tape_head = $tape_head->getNext();
-        }
-        return $current_val;
+        return $this->grad;
     }
 
     /**
@@ -308,17 +298,40 @@ class Variable
      */
     public function getShape(): array
     {
-        return $this->shape();
+        return $this->getArray()->shape();
     }
 
     /**
+     * @param Variable $a
      * @return Variable
-     * @throws ValueErrorException
      */
-    public function tanh(): Variable
+    public static function tanh(Variable $a): Variable
     {
-        $this->registerOperation("tanh", []);
-        $this->array = nd::tanh($this->array);
-        return $this;
+        $new_var = Variable::fromArray(nd::tanh($a->getArray()));
+        $new_var->setInputs([$a]);
+        $new_var->registerOperation("tanh");
+        return $new_var;
+    }
+
+    /**
+     * @return void
+     */
+    public function backward(?\NDArray $grad = NULL)
+    {
+        if (!isset($grad)) {
+            $grad = nd::ones($this->getArray()->shape());
+        }
+
+        if ($this->requireGrad) {
+            if (!isset($this->grad)) {
+                $this->grad = $grad;
+            } else {
+                $this->grad += $grad;
+            }
+
+            if ($this->getOperation() != NULL) {
+                $this->getOperation()->backward($grad);
+            }
+        }
     }
 }

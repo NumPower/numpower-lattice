@@ -116,9 +116,9 @@ class Dense extends Layer
      * @throws ValueErrorException
      */
     public function __invoke(Variable $inputs): Variable {
-        $outputs = $inputs->dot($this->kernel->getArray());
+        $outputs = Variable::dot($inputs, $this->kernel);
         if ($this->useBias) {
-            $outputs = $outputs->add($this->bias->getArray());
+            $outputs = Variable::add($outputs, $this->bias);
         }
         if ($this->activation) {
             $outputs = ($this->activation)($outputs);

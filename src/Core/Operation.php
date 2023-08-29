@@ -2,6 +2,8 @@
 
 namespace NumPower\Lattice\Core;
 
+use \NDArray as nd;
+
 class Operation
 {
     /**
@@ -10,7 +12,7 @@ class Operation
     private string $name;
 
     /**
-     * @var array
+     * @var Variable[]
      */
     private array $args;
 
@@ -64,6 +66,50 @@ class Operation
      */
     public function setNext(Operation $op): void {
         $this->next = $op;
+    }
+
+    /**
+     * @param \NDArray $grad
+     * @return void
+     */
+    public function backward(\NDArray $grad): void
+    {
+        switch ($this->getName()) {
+            case 'add':
+                $this->args[0]->backward($grad);
+                $this->args[1]->backward($grad);
+                break;
+            case 'power':
+                $this->args[0]->backward($grad * $this->args[1]->getArray() * $this->args[0]->getArray() ** ($this->args[1]->getArray() - 1));
+                $this->args[1]->backward($grad * $this->args[0]->getArray() ** $this->args[1]->getArray() * nd::log($this->args[0]->getArray()));
+                break;
+            case 'subtract':
+                $this->args[0]->backward($grad);
+                $this->args[1]->backward(-$grad);
+                break;
+            case 'divide':
+                $this->args[0]->backward($grad / $this->args[1]->getArray());
+                $this->args[1]->backward(-$grad * $this->args[0]->getArray() / $this->args[1]->getArray() ** 2);
+                break;
+            case 'exp':
+                $this->args[0]->backward($grad * nd::exp($this->args[0]->getArray()));
+                break;
+            case 'tanh':
+                $this->args[0]->backward($grad * (1 - nd::tanh($this->args[0]->getArray()) ** 2));
+                break;
+            case 'multiply':
+                $this->args[0]->backward($grad * $this->args[1]->getArray());
+                $this->args[1]->backward($this->args[0]->getArray() * $grad);
+                break;
+            case 'dot':
+                if (count($this->args[0]->getShape()) > 1 && count($this->args[0]->getShape()) > 1) {
+                    $this->args[0]->backward(nd::matmul($grad, nd::transpose($this->args[1]->getArray())));
+                    $this->args[1]->backward(nd::matmul(nd::transpose($this->args[0]->getArray()), $grad));
+                } else {
+                    throw new \Exception("Back propagation fatal error.");
+                }
+                break;
+        }
     }
 
     /**

@@ -12,10 +12,9 @@ class Tanh implements IActivation
     /**
      * @param Variable $inputs
      * @return Variable
-     * @throws ValueErrorException
      */
     public function __invoke(Variable $inputs): Variable
     {
-        return $inputs->tanh();
+        return Variable::tanh($inputs);
     }
 }

@@ -7,5 +7,5 @@ use NumPower\Lattice\Models\Model;
 
 interface IOptimizer
 {
-    function __invoke(Variable $outputs, Model $model): void;
+    function __invoke(Variable $outputs, Variable $error, Model $model): void;
 }

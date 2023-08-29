@@ -164,7 +164,8 @@ class Layer implements ILayer
             shape: $shape,
             initializer: $initializer,
             trainable: $trainable,
-            regularizer: $regularizer
+            regularizer: $regularizer,
+            requireGrad: True
         );
 
         if ($trainable) {

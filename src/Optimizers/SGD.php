@@ -25,30 +25,17 @@ class SGD extends Optimizer
 
     /**
      * @param Variable $outputs
+     * @param Variable $error
      * @param Model $model
      * @return void
      */
-    public function __invoke(Variable $outputs, Model $model): void
+    public function __invoke(Variable $outputs, Variable $error, Model $model): void
     {
+        $error->backward();
         foreach (array_reverse($model->getLayers(), True) as $idx => $layer) {
             if ($layer->isTrainable()) {
-                $diff = $outputs->partialDiff($idx);
-                $lr = nd::zeros($diff->shape());
-                $lr->fill($this->learningRate);
-                if ($diff->isGPU()) {
-                    $lr = $lr->gpu();
-                }
-                $new_weights = [];
-                $t_weights = $layer->getTrainableWeights();
-                foreach ($t_weights as $idx_w => $weight) {
-                    if (count($diff->shape()) == 1) {
-                        $diff = nd::reshape($diff, [1, count($diff)]);
-                    }
-                    $new_weights[$idx_w] = $weight->getArray() + ($diff * $lr);
-                }
-                foreach ($t_weights as $idx_w => $weight) {
-                    $t_weights[$idx_w] = $new_weights[$idx_w];
-                }
+                $w = $layer->getTrainableWeights()[0];
+                $w->overwriteArray($w->getArray() - ($w->diff() * $this->learningRate));
             }
         }
     }

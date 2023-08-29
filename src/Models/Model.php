@@ -91,8 +91,8 @@ class Model extends Layer implements IModel
      * @param Variable $outputs
      * @return float
      */
-    public function computeLoss(\NDArray $y, Variable $outputs): float {
-        return $this->getLossFunction()($y, $outputs->getArray());
+    public function computeLoss(\NDArray $y, Variable $outputs): Variable {
+        return $this->getLossFunction()($y, $outputs);
     }
 
     /**
@@ -101,7 +101,7 @@ class Model extends Layer implements IModel
      * @return array
      */
     public function trainStep(\NDArray $x, \NDArray $y): array {
-        $x_var = Variable::fromArray("x", $x);
+        $x_var = Variable::fromArray($x, name: "x");
         $outputs = $x_var;
         foreach ($this->getLayers() as $layer) {
             $outputs = $layer($outputs);
@@ -109,7 +109,8 @@ class Model extends Layer implements IModel
         if (isset($this->lossFunction)) {
             $loss = $this->computeLoss($y, $outputs);
         }
-        $this->getOptimizer()($outputs, $this);
+
+        $this->getOptimizer()($outputs, $loss, $this);
         return [$this->computeMetrics(), $loss, $outputs];
     }
 
@@ -166,13 +167,26 @@ class Model extends Layer implements IModel
             $sum_loss = 0;
             foreach ($x as $idx => $sample) {
                 [$metrix, $loss, $outputs] = $this->trainStep(nd::reshape($sample, [1, count($sample)]), $y[$idx]);
-                $this->getOptimizer()($outputs, $this);
                 $this->epochPrinter->update($idx+1, count($x));
-                $sum_loss += $loss;
+                $sum_loss += $loss->getArray();
             }
             echo "\nloss: ". ($sum_loss/count($x));
             $this->epochPrinter->stop();
         }
+    }
+
+    public function predict($x)
+    {
+        $outputs_p = [];
+        foreach ($x as $idx => $sample) {
+            $x_var = Variable::fromArray(nd::reshape($sample, [1, count($sample)]), name: "x");
+            $outputs = $x_var;
+            foreach ($this->getLayers() as $layer) {
+                $outputs = $layer($outputs);
+            }
+            $outputs_p[] = $outputs->getArray();
+        }
+        return $outputs_p;
     }
 
     /**
