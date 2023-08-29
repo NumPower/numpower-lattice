@@ -77,6 +77,7 @@ class Model extends Layer implements IModel
             $this->setLossFunction($loss);
         }
         $this->isCompiled = true;
+        $this->optimizer->build($this);
     }
 
     /**
@@ -109,8 +110,7 @@ class Model extends Layer implements IModel
         if (isset($this->lossFunction)) {
             $loss = $this->computeLoss($y, $outputs);
         }
-
-        $this->getOptimizer()($outputs, $loss, $this);
+        $this->getOptimizer()($loss, $this);
         return [$this->computeMetrics(), $loss, $outputs];
     }
 
@@ -164,17 +164,24 @@ class Model extends Layer implements IModel
 
         for ($i = 0; $i < $epochs; $i++) {
             $this->epochPrinter->start($i, $epochs, "CPU");
-            $sum_loss = 0;
+            $sum_loss = Variable::fromArray(nd::array([0]));
             foreach ($x as $idx => $sample) {
                 [$metrix, $loss, $outputs] = $this->trainStep(nd::reshape($sample, [1, count($sample)]), $y[$idx]);
                 $this->epochPrinter->update($idx+1, count($x));
-                $sum_loss += $loss->getArray();
+                if (is_int($loss)) {
+                    continue;
+                }
+                $sum_loss = $loss->getArray();
             }
-            echo "\nloss: ". ($sum_loss/count($x));
+            echo "\nloss: ". ($sum_loss/count($x))[0];
             $this->epochPrinter->stop();
         }
     }
 
+    /**
+     * @param $x
+     * @return array
+     */
     public function predict($x)
     {
         $outputs_p = [];

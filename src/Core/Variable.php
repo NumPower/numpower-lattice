@@ -114,8 +114,9 @@ class Variable
     }
 
     /**
-     * @param string $name
      * @param nd $array
+     * @param string $name
+     * @param bool $requireGrad
      * @return Variable
      */
     public static function fromArray(\NDArray $array, string $name = "", bool $requireGrad = False): Variable {
@@ -169,12 +170,23 @@ class Variable
 
     /**
      * @param Variable $a
+     * @return Variable
+     */
+    public static function abs(Variable $a): Variable {
+        $new_var = Variable::fromArray(nd::abs($a->getArray()));
+        $new_var->setInputs([$a]);
+        $new_var->registerOperation("abs");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
      * @param Variable $b
      * @return Variable
      */
     public static function power(Variable $a, Variable $b): Variable
     {
-        $new_var = Variable::fromArray( $a->getArray() ** $b->getArray());
+        $new_var = Variable::fromArray( nd::clip($a->getArray() ** $b->getArray(), min: -1.175e38, max: 3.40e+38));
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("power");
         return $new_var;
@@ -233,6 +245,18 @@ class Variable
         $new_var = self::fromArray(nd::exp($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("exp");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
+     * @return Variable
+     */
+    public static function mean(Variable $a): Variable
+    {
+        $new_var = Variable::fromArray(nd::array([nd::average($a->getArray())]));
+        $new_var->setInputs([$a]);
+        $new_var->registerOperation("mean");
         return $new_var;
     }
 
@@ -314,7 +338,9 @@ class Variable
     }
 
     /**
+     * @param nd|null $grad
      * @return void
+     * @throws \Exception
      */
     public function backward(?\NDArray $grad = NULL)
     {

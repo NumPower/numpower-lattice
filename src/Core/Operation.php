@@ -71,6 +71,7 @@ class Operation
     /**
      * @param \NDArray $grad
      * @return void
+     * @throws \Exception
      */
     public function backward(\NDArray $grad): void
     {
@@ -95,16 +96,25 @@ class Operation
                 $this->args[0]->backward($grad * nd::exp($this->args[0]->getArray()));
                 break;
             case 'tanh':
-                $this->args[0]->backward($grad * (1 - nd::tanh($this->args[0]->getArray()) ** 2));
+                $this->args[0]->backward($grad * (1 - (nd::tanh($this->args[0]->getArray()) ** 2)));
                 break;
             case 'multiply':
                 $this->args[0]->backward($grad * $this->args[1]->getArray());
                 $this->args[1]->backward($this->args[0]->getArray() * $grad);
                 break;
+            case 'abs':
+                $this->args[0]->backward($grad * nd::sign($this->args[0]->getArray()));
+                break;
+            case 'mean':
+                $this->args[0]->backward((nd::ones($this->args[0]->getArray()->shape()) * $grad) / nd::prod(nd::array($this->args[0]->getArray()->shape())));
+                break;
             case 'dot':
+                if (count($grad->shape()) == 1) {
+                    $grad = nd::reshape($grad, [1, count($grad)]);
+                }
                 if (count($this->args[0]->getShape()) > 1 && count($this->args[0]->getShape()) > 1) {
-                    $this->args[0]->backward(nd::matmul($grad, nd::transpose($this->args[1]->getArray())));
-                    $this->args[1]->backward(nd::matmul(nd::transpose($this->args[0]->getArray()), $grad));
+                    $this->args[0]->backward(nd::dot($grad, nd::transpose($this->args[1]->getArray())));
+                    $this->args[1]->backward(nd::dot(nd::transpose($this->args[0]->getArray()), $grad));
                 } else {
                     throw new \Exception("Back propagation fatal error.");
                 }

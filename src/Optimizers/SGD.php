@@ -24,18 +24,19 @@ class SGD extends Optimizer
     }
 
     /**
-     * @param Variable $outputs
      * @param Variable $error
      * @param Model $model
      * @return void
+     * @throws \Exception
      */
-    public function __invoke(Variable $outputs, Variable $error, Model $model): void
+    public function __invoke(Variable $error, Model $model): void
     {
         $error->backward();
         foreach (array_reverse($model->getLayers(), True) as $idx => $layer) {
             if ($layer->isTrainable()) {
                 $w = $layer->getTrainableWeights()[0];
-                $w->overwriteArray($w->getArray() - ($w->diff() * $this->learningRate));
+                $wd = $w->getArray() - ($w->diff() * $this->learningRate);
+                $w->overwriteArray($wd);
             }
         }
     }

@@ -6,14 +6,15 @@ use \NDArray as nd;
 use NumPower\Lattice\Core\Losses\Loss;
 use NumPower\Lattice\Core\Variable;
 
-class MeanSquaredError extends Loss
+class MeanAbsoluteError extends Loss
 {
+
     /**
-     * @param nd $true
+     * @param \NDArray $true
      * @param Variable $pred
      * @return Variable
      */
-    public function __invoke(\NDArray $true, Variable $pred): Variable
+    function __invoke(\NDArray $true, Variable $pred): Variable
     {
         $true = Variable::fromArray($true, requireGrad: True);
         $twos = nd::ones($pred->shape()) * 2;
@@ -21,6 +22,6 @@ class MeanSquaredError extends Loss
             $twos = $twos->gpu();
         }
         $twos = Variable::fromArray($twos);
-        return Variable::mean(Variable::power(Variable::subtract($true, $pred), $twos));
+        return Variable::mean(Variable::abs(Variable::subtract($true, $pred)));
     }
 }
