@@ -2,67 +2,24 @@
 
 namespace NumPower\Lattice\Layers;
 
-use \NDArray as nd;
+use NumPower\Lattice\Core\Layers\Layer;
 
 class Input extends Layer
 {
     /**
-     * @var array
+     * @var int|null
      */
-    private array $inputShape;
+    public ?int $batchSize;
 
     /**
-     * @param array $inputShape
+     * @param array $shape
+     * @param ?int $batchSize
+     * @param ?string|null $name
      */
-    public function __construct(array $inputShape) {
-        $this->inputShape = $inputShape;
+    public function __construct(array $shape, ?int $batchSize = NULL, ?string $name = NULL) {
+        $this->inputShape = $shape;
+        $this->batchSize = $batchSize;
+        ($name) ? $this->setName($name) : $this->setName("input_". substr(uniqid(), -4));
         parent::__construct();
-    }
-
-    public function inputShape(): array
-    {
-        return [$this->inputShape];
-    }
-
-    public function generateOutputShape(): array
-    {
-        return $this->inputShape;
-    }
-
-    public function initialize(ILayer $nextLayer, bool $use_gpu, bool $isOutput = false): void
-    {
-        // TODO: Implement initialize() method.
-    }
-
-    /**
-     * Forward Propagation
-     *
-     * @param \NDArray $inputs
-     * @return \NDArray
-     */
-    public function forward(\NDArray $inputs): \NDArray {
-        $this->setActivation($inputs);
-        return $inputs;
-    }
-
-    /**
-     * @param ILayer $previousLayer
-     * @param \NDArray $error
-     * @return void
-     */
-    function backward(ILayer $previousLayer, \NDArray $error): \NDArray
-    {
-        $previous_activation = $previousLayer->getActivation();
-        if (count($error->shape()) == 1) {
-            $delta = nd::multiply(nd::reshape($error, [1, count($error)]), $previousLayer->getActivationFunction()->derivative($previous_activation));
-            $delta = nd::transpose($delta);
-        } else {
-            $delta = nd::multiply($error, $previousLayer->getActivationFunction()->derivative($previous_activation));
-        }
-
-        $this->setDerivative(
-            nd::dot(nd::transpose($this->getActivation()), $delta)
-        );
-        return nd::dot($delta, nd::transpose($previousLayer->weights()));
     }
 }

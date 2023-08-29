@@ -3,144 +3,136 @@
 namespace NumPower\Lattice\Layers;
 
 use \NDArray as nd;
-use NumPower\Lattice\Activations\IActivation;
-use NumPower\Lattice\Initializers\IInitializer;
-use NumPower\Lattice\Initializers\RandomNormal;
-use NumPower\Lattice\Initializers\RandomUniform;
-use NumPower\Lattice\Initializers\Zeros;
+use NumPower\Lattice\Core\Activations\IActivation;
+use NumPower\Lattice\Core\Initializers\IInitializer;
+use NumPower\Lattice\Core\Layers\Layer;
+use NumPower\Lattice\Core\Regularizers\IRegularizer;
+use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Exceptions\ValueErrorException;
 
 class Dense extends Layer
 {
+    /**
+     * @var ?IActivation
+     */
+    private ?IActivation $activation;
+
+    /**
+     * @var bool
+     */
+    private bool $useBias;
+
+    /**
+     * @var IInitializer|null
+     */
+    private ?IInitializer $kernelInitializer;
+
+    /**
+     * @var IInitializer|null
+     */
+    private ?IInitializer $biasInitializer;
+
     /**
      * @var int
      */
     private int $units;
 
     /**
-     * @var IInitializer|null
+     * @var IRegularizer|null
      */
-    private ?IInitializer $weightsInitializer;
+    private ?IRegularizer $kernelRegularizer;
 
     /**
-     * @var array
+     * @var IRegularizer|null
      */
-    private array $inputShape;
+    private ?IRegularizer $biasRegularizer;
 
     /**
-     * @var array
+     * @var Variable
      */
-    private array $outputShape;
+    private Variable $kernel;
+
+    /**
+     * @var Variable
+     */
+    private Variable $bias;
 
     /**
      * @param int $units
-     * @param IActivation $activation
-     * @param IInitializer|null $weightsInitializer
+     * @param IActivation|null $activation
+     * @param bool $useBias
+     * @param IInitializer|null $kernelInitializer
+     * @param IInitializer|null $biasInitializer
+     * @param IRegularizer|null $kernelRegularizer
+     * @param IRegularizer|null $biasRegularizer
      */
-    public function __construct(int $units, IActivation $activation, IInitializer $weightsInitializer = NULL) {
+    public function __construct(int $units,
+                                ?IActivation $activation = NULL,
+                                bool $useBias = True,
+                                ?IInitializer $kernelInitializer = NULL,
+                                ?IInitializer $biasInitializer = NULL,
+                                ?IRegularizer $kernelRegularizer = NULL,
+                                ?IRegularizer $biasRegularizer = NULL
+    ) {
         $this->units = $units;
-        $this->weightsInitializer = $weightsInitializer;
-        $this->setActivationFunction($activation);
+        $this->activation = $activation;
+        $this->useBias = $useBias;
+        $this->kernelInitializer = $kernelInitializer;
+        $this->biasInitializer = $biasInitializer;
+        $this->kernelRegularizer = $kernelRegularizer;
+        $this->biasRegularizer = $biasRegularizer;
+        $this->setName("dense_" . substr(uniqid(), -4));
         parent::__construct();
     }
 
     /**
-     * @return array
-     */
-    public function inputShape(): array
-    {
-        return $this->inputShape;
-    }
-
-    /**
-     * @param array $inputShape
      * @return void
      */
-    private function setInputShape(array $inputShape): void {
-        $this->inputShape = $inputShape;
-    }
-
-    /**
-     * @return array
-     */
-    public function generateOutputShape(): array
-    {
-        if ($this->isOutputLayer) {
-            return [$this->units];
-        }
-        if (count($this->inputShape) == 1) {
-            return [$this->inputShape[0], $this->units];
-        }
-        return [$this->inputShape[1], $this->units];
-    }
-
-    /**
-     * @return void
-     */
-    private function initializeWeights(bool $use_gpu): void
-    {
-        if(!isset($this->weightsInitializer)) {
-            if (!$this->isOutputLayer) {
-                $this->weightsInitializer = new RandomUniform();
-                $this->weightsInitializer->setShape($this->generateOutputShape());
-            } else {
-                $this->weightsInitializer = new RandomUniform();
-                $this->weightsInitializer->setShape([$this->inputShape[count($this->inputShape) - 1], $this->units]);
-            }
-        }
-        $this->setWeights($this->weightsInitializer->initialize($use_gpu));
-    }
-
-    /**
-     * @param array $shape
-     * @return void
-     */
-    private function setOutputShape(array $shape): void
-    {
-        $this->outputShape = $shape;
-    }
-
-    /**
-     * @param ILayer $previousLayer
-     * @param bool $use_gpu
-     * @param bool $isOutput
-     * @return void
-     */
-    public function initialize(ILayer $previousLayer, bool $use_gpu, bool $isOutput = false): void
-    {
-        $this->isOutputLayer = $isOutput;
-        $this->setInputShape($previousLayer->generateOutputShape());
-        $this->initializeWeights($use_gpu);
-    }
-
-    /**
-     * Forward Propagation
-     *
-     * @param nd $inputs
-     * @return nd
-     */
-    public function forward(\NDArray $inputs): \NDArray {
-        $net_input = nd::dot($inputs, $this->weights());
-        $activations = $this->getActivationFunction()->activate($net_input);
-        $this->setActivation($activations);
-        return $activations;
-    }
-
-    /**
-     * @param ILayer $previousLayer
-     * @param nd $error
-     * @return nd
-     */
-    public function backward(ILayer $previousLayer, \NDArray $error): \NDArray {
-        $previous_activation = $previousLayer->getActivation();
-        if (count($error->shape()) == 1) {
-            $delta = nd::multiply(nd::reshape($error, [1, count($error)]), $previousLayer->getActivationFunction()->derivative($previous_activation));
-            //$delta = nd::transpose($delta);
-        } else {
-            $delta = nd::multiply($error, $previousLayer->getActivationFunction()->derivative($previous_activation));
-        }
-        $this->setDerivative(
-            nd::dot(nd::transpose($this->getActivation()), $delta)
+    public function build(array $inputShape) {
+        $this->setInputShape($inputShape);
+        $last_dim = $inputShape[count($inputShape) - 1];
+        $this->kernel = $this->addWeight(
+            name: "kernel",
+            shape: [$last_dim, $this->units],
+            initializer: $this->kernelInitializer,
+            regularizer: $this->kernelRegularizer,
+            trainable: True
         );
-        return nd::dot($delta, nd::transpose($previousLayer->weights()));
+        if ($this->useBias) {
+            $this->bias = $this->addWeight(
+                name: "bias",
+                shape: [1, $this->units],
+                initializer: $this->biasInitializer,
+                regularizer: $this->biasRegularizer,
+                trainable: True
+            );
+        }
+        $this->setBuilt(true);
+    }
+
+    /**
+     * @param Variable $inputs
+     * @return Variable
+     * @throws ValueErrorException
+     */
+    public function __invoke(Variable $inputs): Variable {
+        $outputs = $inputs->dot($this->kernel->getArray());
+        if ($this->useBias) {
+            $outputs = $outputs->add($this->bias->getArray());
+        }
+        if ($this->activation) {
+            $outputs = ($this->activation)($outputs);
+        }
+        return $outputs;
+    }
+
+    /**
+     * @return array
+     */
+    public function generateOutputShape(): array {
+        $shape = $this->getInputShape();
+        array_pop($shape);
+        $shape[] = $this->units;
+        return $shape;
     }
 }

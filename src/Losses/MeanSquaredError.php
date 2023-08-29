@@ -3,17 +3,21 @@
 namespace NumPower\Lattice\Losses;
 
 use \NDArray as nd;
-use NumPower\Lattice\Losses\Loss;
+use NumPower\Lattice\Core\Losses\Loss;
 
 class MeanSquaredError extends Loss
 {
     /**
-     * @param \NDArray $target
-     * @param \NDArray $output
+     * @param nd $true
+     * @param nd $pred
      * @return float
      */
-    public function calculate(\NDArray $target, \NDArray $output): \NDArray|float
+    public function __invoke(\NDArray $true, \NDArray $pred): float
     {
-        return nd::average(($target - $output) ** 2);
+        $twos = nd::ones($pred->shape()) * 2;
+        if ($true->isGPU()) {
+            $twos = $twos->gpu();
+        }
+        return nd::average(($true - $pred) ** $twos);
     }
 }

@@ -1,29 +1,36 @@
 <?php
+
 namespace NumPower\Lattice\Models;
 
 use \NDArray as nd;
-use NumPower\Lattice\Layers\ILayer;
-use NumPower\Lattice\Layers\Input;
-use NumPower\Lattice\Losses\ILoss;
-use NumPower\Lattice\Optimizers\IOptimizer;
+use NumPower\Lattice\Core\Layers\ILayer;
+use NumPower\Lattice\Core\Layers\Layer;
+use NumPower\Lattice\Core\Losses\ILoss;
+use NumPower\Lattice\Core\Models\IModel;
+use NumPower\Lattice\Core\Optimizers\IOptimizer;
+use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Exceptions\ValueErrorException;
 use NumPower\Lattice\Utils\EpochPrinter;
+use NumPower\Lattice\Utils\LayerUtils;
 
-abstract class Model implements IModel
+class Model extends Layer implements IModel
 {
     /**
-     * @var IOptimizer
+     * @var int
      */
-    private IOptimizer $optimizer;
+    protected int $isCompiled;
 
     /**
      * @var ILayer[]
      */
-    protected array $layers = [];
+    protected array $layers;
 
     /**
-     * @var ILoss
+     * Model Optimizer
+     *
+     * @var IOptimizer
      */
-    private ILoss $lossFunction;
+    private IOptimizer $optimizer;
 
     /**
      * @var EpochPrinter
@@ -31,72 +38,87 @@ abstract class Model implements IModel
     private EpochPrinter $epochPrinter;
 
     /**
-     * @var bool
+     * @var ILoss|null
      */
-    protected bool $useGPU;
+    private ?ILoss $lossFunction;
 
-    public function __construct() {
+    public function __construct(?string $name = NULL) {
+        $this->layers = [];
         $this->epochPrinter = new EpochPrinter();
+        $this->isCompiled = false;
+        ($name == NULL) ? $this->setName("model_". substr(uniqid(), -4)) : $this->setName($name);
     }
 
     /**
-     * @return EpochPrinter
+     * @return ILayer[]
      */
-    public function getEpochPrinter(): EpochPrinter
-    {
-        return $this->epochPrinter;
-    }
-
-    public function setOptimizer(IOptimizer $optimizer): void
-    {
-        $this->optimizer = $optimizer;
-    }
-
-    /**
-     * @return array
-     */
-    public function layers(): array
+    public function getLayers(): array
     {
         return $this->layers;
     }
 
     /**
-     * @param nd $target
-     * @param nd $output
-     * @return nd|float
-     */
-    public function computeLoss(\NDArray $target, \NDArray $output): \NDArray|float
-    {
-        return $this->getLossFunction()->calculate($target, $output);
-    }
-
-    /**
-     * @param \NDArray $inputs
-     * @return \NDArray
-     */
-    public function forward(\NDArray $inputs): \NDArray
-    {
-        foreach ($this->layers() as $idx => $layer) {
-            $inputs = $layer->forward($inputs);
-        }
-        return $inputs;
-    }
-
-    /**
-     * Back propagation
-     *
-     * @param nd $error
+     * @param IOptimizer $optimizer
+     * @param ILoss|null $loss
+     * @param array|null $metrics
      * @return void
      */
-    public function backward(\NDArray $error): void
-    {
-        $reverse_layers = array_reverse($this->layers, true);
-        foreach ($reverse_layers as $idx => $layer) {
-            if ($idx == count($this->layers()) - 1) {
+    public function compile(IOptimizer $optimizer, ?ILoss $loss = NULL, ?array $metrics = NULL): void {
+        $layers = $this->getLayers();
+        $this->setOptimizer($optimizer);
+        foreach ($this->getLayers() as $idx => $layer) {
+            if ($idx == 0) {
+                $layer->build([]);
                 continue;
             }
-            $error = $layer->backward($reverse_layers[$idx + 1], $error);
+            $layer->build($layers[$idx-1]->generateOutputShape());
         }
+        if ($loss) {
+            $this->setLossFunction($loss);
+        }
+        $this->isCompiled = true;
+    }
+
+    /**
+     * @return void
+     */
+    public function metrics(): void {
+
+    }
+
+    /**
+     * @param nd $y
+     * @param Variable $outputs
+     * @return float
+     */
+    public function computeLoss(\NDArray $y, Variable $outputs): float {
+        return $this->getLossFunction()($y, $outputs->getArray());
+    }
+
+    /**
+     * @param \NDArray $x
+     * @param \NDArray $y
+     * @return array
+     */
+    public function trainStep(\NDArray $x, \NDArray $y): array {
+        $x_var = Variable::fromArray("x", $x);
+        $outputs = $x_var;
+        foreach ($this->getLayers() as $layer) {
+            $outputs = $layer($outputs);
+        }
+        if (isset($this->lossFunction)) {
+            $loss = $this->computeLoss($y, $outputs);
+        }
+        $this->getOptimizer()($outputs, $this);
+        return [$this->computeMetrics(), $loss, $outputs];
+    }
+
+    /**
+     * @param IOptimizer $optimizer
+     * @return void
+     */
+    public function setOptimizer(IOptimizer $optimizer): void {
+        $this->optimizer = $optimizer;
     }
 
     /**
@@ -108,51 +130,12 @@ abstract class Model implements IModel
     }
 
     /**
+     * @param ILoss $loss_fn
      * @return void
      */
-    public function optimize(): void
+    public function setLossFunction(ILoss $loss_fn): void
     {
-        foreach ($this->layers() as $idx => $layer) {
-            if (is_a($layer, Input::class)) {
-                continue;
-            }
-            if ($layer->isOutput()) {
-                continue;
-            }
-            $this->getOptimizer()->adjust($this->layers()[$idx - 1]->getDerivative(), $layer);
-        }
-    }
-
-    /**
-     * @param array $data
-     * @return float
-     */
-    public function trainStep(array $data): float
-    {
-        $sum_loss = 0;
-        $x = $data[0];
-        $y = $data[1];
-        foreach($x as $idx => $sample) {
-            // Forward pass
-            $outputs = $this->forward(nd::reshape($sample, [1, count($sample)]));
-            $error = $y[$idx] - $outputs[0];
-
-            // Backward pass
-            $this->backward($error);
-            $sum_loss += $this->computeLoss($y[$idx], $outputs);
-            $this->optimize();
-            $this->getEpochPrinter()->update($idx+1, count($x));
-        }
-        return $sum_loss / count($x);
-    }
-
-    /**
-     * @param ILoss $loss
-     * @return void
-     */
-    public function setLossFunction(ILoss $loss): void
-    {
-        $this->lossFunction = $loss; 
+        $this->lossFunction = $loss_fn;
     }
 
     /**
@@ -164,27 +147,63 @@ abstract class Model implements IModel
     }
 
     /**
-     * @param IOptimizer $optimizer
-     * @param ILoss $loss
-     * @param bool $use_gpu
+     * @param \NDArray $x
+     * @param \NDArray $y
+     * @param int|null $batchSize
+     * @param int $epochs
+     * @param float|null $validationSplit
+     * @param array|null $validationData
+     * @param bool|null $shuffle
      * @return void
      */
-    public function build(IOptimizer $optimizer, ILoss $loss, bool $use_gpu = False): void
+    public function fit(\NDArray $x, \NDArray $y, ?int $batchSize = NULL,
+                        int $epochs = 1, ?float $validationSplit = 0.0,
+                        ?array $validationData = NULL, ?bool $shuffle = True): void
     {
-        $this->useGPU = $use_gpu;
-        $this->setLossFunction($loss);
-        $this->setOptimizer($optimizer);
-        $layers = $this->layers();
-        $input_shape = [];
 
-        foreach ($layers as $idx => $layer) {
-            if (is_a($layer, Input::class)) {
-                continue;
+        for ($i = 0; $i < $epochs; $i++) {
+            $this->epochPrinter->start($i, $epochs, "CPU");
+            $sum_loss = 0;
+            foreach ($x as $idx => $sample) {
+                [$metrix, $loss, $outputs] = $this->trainStep(nd::reshape($sample, [1, count($sample)]), $y[$idx]);
+                $this->getOptimizer()($outputs, $this);
+                $this->epochPrinter->update($idx+1, count($x));
+                $sum_loss += $loss;
             }
-            if (!array_key_exists($idx-1, $layers)) {
-                break;
-            }
-            $layer->initialize($layers[$idx-1], $this->useGPU, ($idx == count($this->layers) - 1));
+            echo "\nloss: ". ($sum_loss/count($x));
+            $this->epochPrinter->stop();
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function summary(): void
+    {
+        LayerUtils::printSummary($this);
+    }
+
+    /**
+     * @return array
+     */
+    private function computeMetrics(): array
+    {
+        return [];
+    }
+
+    /**
+     * @param string $file_path
+     * @return void
+     * @throws ValueErrorException
+     */
+    public function save(string $file_path): void
+    {
+        if (file_exists($file_path)) {
+            throw new ValueErrorException("File already exists.");
+        }
+        $file_ptr = fopen($file_path, 'wb');
+        $serialized_model = serialize($this);
+        fwrite($file_ptr, $serialized_model);
+        fclose($file_ptr);
     }
 }

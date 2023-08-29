@@ -3,35 +3,21 @@
 namespace NumPower\Lattice\Activations;
 
 use \NDArray as nd;
+use NumPower\Lattice\Core\Activations\IActivation;
+use NumPower\Lattice\Core\Variable;
 
 /**
  * The sigmoid activation function
  * 1 / (1 + exp(-x))
  */
-class Sigmoid extends Activation
+class Sigmoid implements IActivation
 {
     /**
-     * @param \NDArray $x
-     * @return \NDArray
+     * @param Variable $inputs
+     * @return Variable
      */
-    public function activate(\NDArray $x): \NDArray {
-        $ones = nd::ones($x->shape());
-        if ($x->isGPU()) {
-            $ones = $ones->gpu();
-        }
-        return $ones / (nd::exp(nd::negative($x)) + $ones);
-    }
-
-    /**
-     * @param nd $y
-     * @return nd
-     */
-    function derivative(\NDArray $x): \NDArray
-    {
-        $ones = nd::ones($x->shape());
-        if ($x->isGPU()) {
-            $ones = $ones->gpu();
-        }
-        return $x * ($ones - $x);
+    public function __invoke(Variable $inputs): Variable {
+        $ones = nd::ones($inputs->getShape());
+        return $inputs->negative()->exp()->add($ones)->denominatorDivide($ones);
     }
 }
