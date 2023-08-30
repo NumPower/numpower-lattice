@@ -101,7 +101,7 @@ class Dense extends Layer
         if ($this->useBias) {
             $this->bias = $this->addWeight(
                 name: "bias",
-                shape: [1, $this->units],
+                shape: [$this->units],
                 initializer: $this->biasInitializer,
                 regularizer: $this->biasRegularizer,
                 trainable: True

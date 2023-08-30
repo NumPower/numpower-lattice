@@ -15,7 +15,7 @@ class MeanSquaredError extends Loss
      */
     public function __invoke(\NDArray $true, Variable $pred): Variable
     {
-        $true = Variable::fromArray($true, requireGrad: True);
+        $true = Variable::fromArray($true);
         $twos = nd::ones($pred->shape()) * 2;
         if ($true->getArray()->isGPU()) {
             $twos = $twos->gpu();

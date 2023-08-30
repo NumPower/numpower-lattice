@@ -134,7 +134,7 @@ class Variable
      */
     public function overwriteArray(\NDArray $array): void
     {
-        $this->array = $array;
+        $this->array = nd::clip($array, min: -1.175e38, max: 3.40e+38);
     }
 
     /**
@@ -198,6 +198,32 @@ class Variable
     public function getInputs(): array
     {
         return $this->inputs;
+    }
+
+    public static function sum_axis(Variable $a, int $axis, bool $keepdim = False): Variable
+    {
+        $value = nd::sum($a->getArray(), $axis);
+        if ($keepdim) {
+            if (count($value->shape()) == 1 && count($value) == 1) {
+                $value = $value[0] * nd::ones($a->getArray()->shape());
+            }
+        }
+        $new_var = Variable::fromArray($value);
+        $new_var->setInputs([$a, $axis, $keepdim]);
+        $new_var->registerOperation("sum_axis");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
+     * @return Variable
+     */
+    public static function sqrt(Variable $a): Variable
+    {
+        $new_var = Variable::fromArray(nd::sqrt($a->getArray()));
+        $new_var->setInputs([$a]);
+        $new_var->registerOperation("sqrt");
+        return $new_var;
     }
 
     /**
@@ -281,17 +307,6 @@ class Variable
             return NULL;
         }
         return $this->tape;
-    }
-
-    /**
-     * @param $target
-     * @param $args
-     * @return nd
-     */
-    private static function _tanh_derivative($target, $args): \NDArray
-    {
-        $tanh_x = nd::tanh($target);
-        return 1 - $tanh_x ** 2;
     }
 
     /**

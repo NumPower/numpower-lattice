@@ -2,11 +2,10 @@
 
 namespace NumPower\Lattice\Losses;
 
-use \NDArray as nd;
 use NumPower\Lattice\Core\Losses\Loss;
 use NumPower\Lattice\Core\Variable;
 
-class MeanAbsoluteError extends Loss
+class CategoricalCrossEntropy extends Loss
 {
     /**
      * @param \NDArray $true
@@ -15,7 +14,6 @@ class MeanAbsoluteError extends Loss
      */
     function __invoke(\NDArray $true, Variable $pred): Variable
     {
-        $true = Variable::fromArray($true);
-        return Variable::mean(Variable::abs(Variable::subtract($true, $pred)));
+        // TODO: Implement __invoke() method.
     }
 }

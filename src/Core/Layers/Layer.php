@@ -6,6 +6,7 @@ use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Regularizers\IRegularizer;
 use NumPower\Lattice\Core\Variable;
 use NumPower\Lattice\Exceptions\ValueErrorException;
+use NumPower\Lattice\Initializers\RandomNormal;
 use NumPower\Lattice\Initializers\RandomUniform;
 use NumPower\Lattice\Utils\LayerUtils;
 

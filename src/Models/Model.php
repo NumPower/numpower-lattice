@@ -155,26 +155,28 @@ class Model extends Layer implements IModel
      * @param float|null $validationSplit
      * @param array|null $validationData
      * @param bool|null $shuffle
+     * @param callable|null $epochCallback
      * @return void
      */
     public function fit(\NDArray $x, \NDArray $y, ?int $batchSize = NULL,
                         int $epochs = 1, ?float $validationSplit = 0.0,
-                        ?array $validationData = NULL, ?bool $shuffle = True): void
+                        ?array $validationData = NULL, ?bool $shuffle = True,
+                        ?string $epochCallback = NULL): void
     {
 
         for ($i = 0; $i < $epochs; $i++) {
             $this->epochPrinter->start($i, $epochs, "CPU");
             $sum_loss = Variable::fromArray(nd::array([0]));
             foreach ($x as $idx => $sample) {
-                [$metrix, $loss, $outputs] = $this->trainStep(nd::reshape($sample, [1, count($sample)]), $y[$idx]);
+                [$metrics, $loss, $outputs] = $this->trainStep(nd::reshape($sample, [1, count($sample)]), $y[$idx]);
                 $this->epochPrinter->update($idx+1, count($x));
-                if (is_int($loss)) {
-                    continue;
-                }
                 $sum_loss = $loss->getArray();
             }
             echo "\nloss: ". ($sum_loss/count($x))[0];
             $this->epochPrinter->stop();
+            if (isset($epochCallback)) {
+                call_user_func($epochCallback, $i, $this, $metrics, ($sum_loss/count($x))[0], $outputs);
+            }
         }
     }
 
@@ -226,5 +228,14 @@ class Model extends Layer implements IModel
         $serialized_model = serialize($this);
         fwrite($file_ptr, $serialized_model);
         fclose($file_ptr);
+    }
+
+    /**
+     * @param string $file_path
+     * @return Model
+     */
+    public static function load(string $file_path): Model
+    {
+        return unserialize(file_get_contents($file_path));
     }
 }

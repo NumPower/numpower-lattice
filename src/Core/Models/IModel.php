@@ -10,4 +10,5 @@ interface IModel
      * @return ILayer[]
      */
     function getLayers(): array;
+    function save(string $file_path): void;
 }

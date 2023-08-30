@@ -60,9 +60,12 @@ class Adam extends Optimizer
         $this->m = [];
         $this->v = [];
         foreach ($model->getLayers() as $idx => $layer) {
-            if ($layer->isTrainable()) {
-                $this->m[$idx] = nd::zeros($layer->getTrainableWeights()[0]->getArray()->shape());
-                $this->v[$idx] = nd::zeros($layer->getTrainableWeights()[0]->getArray()->shape());
+            if (!$layer->isTrainable()) {
+                continue;
+            }
+            foreach ($layer->getTrainableWeights() as $w_idx => $w) {
+                $this->m[$idx][$w_idx] = nd::zeros($w->getArray()->shape());
+                $this->v[$idx][$w_idx] = nd::zeros($w->getArray()->shape());
             }
         }
         $this->t = 0;
@@ -82,13 +85,14 @@ class Adam extends Optimizer
             if (!$layer->isTrainable()) {
                 continue;
             }
-            $w = $layer->getTrainableWeights()[0];
-            $grad = $w->diff();
-            $this->m[$idx] = $this->beta1 * $this->m[$idx] + (1 - $this->beta1) * $grad;
-            $this->v[$idx] = $this->beta2 * $this->v[$idx] + (1 - $this->beta2) * $grad ** 2;
-            $m_hat = $this->m[$idx] / (1 - $this->beta1 ** $this->t);
-            $v_hat = $this->v[$idx] / (1 - $this->beta2 ** $this->t);
-            $w->overwriteArray($w->getArray() - (($this->learningRate * $m_hat / (nd::sqrt($v_hat) + $this->epsilon))));
+            foreach ($layer->getTrainableWeights() as $w_idx => $w) {
+                $grad = $w->diff();
+                $this->m[$idx][$w_idx] = $this->beta1 * $this->m[$idx][$w_idx] + (1 - $this->beta1) * $grad;
+                $this->v[$idx][$w_idx] = $this->beta2 * $this->v[$idx][$w_idx] + (1 - $this->beta2) * $grad ** 2;
+                $m_hat = $this->m[$idx][$w_idx] / (1 - $this->beta1 ** $this->t);
+                $v_hat = $this->v[$idx][$w_idx] / (1 - $this->beta2 ** $this->t);
+                $w->overwriteArray($w->getArray() - (($this->learningRate * $m_hat / (nd::sqrt($v_hat) + $this->epsilon))));
+            }
         }
     }
 }

@@ -18,9 +18,9 @@ class SGD extends Optimizer
     /**
      * @param float $learningRate
      */
-    public function __construct(float $learningRate=0.01)
+    public function __construct(float $lr=0.01)
     {
-        $this->learningRate = $learningRate;
+        $this->learningRate = $lr;
     }
 
     /**
@@ -34,9 +34,10 @@ class SGD extends Optimizer
         $error->backward();
         foreach (array_reverse($model->getLayers(), True) as $idx => $layer) {
             if ($layer->isTrainable()) {
-                $w = $layer->getTrainableWeights()[0];
-                $wd = $w->getArray() - ($w->diff() * $this->learningRate);
-                $w->overwriteArray($wd);
+                foreach ($layer->getTrainableWeights() as $w_idx => $w) {
+                    $wd = $w->getArray() - ($w->diff() * $this->learningRate);
+                    $w->overwriteArray($wd);
+                }
             }
         }
     }

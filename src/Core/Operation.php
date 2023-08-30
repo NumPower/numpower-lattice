@@ -98,6 +98,16 @@ class Operation
             case 'tanh':
                 $this->args[0]->backward($grad * (1 - (nd::tanh($this->args[0]->getArray()) ** 2)));
                 break;
+            case 'sqrt':
+                $this->args[0]->backward($grad / (2 * nd::sqrt($this->args[0]->getArray())));
+                break;
+            case 'sum':
+                $this->args[0]->backward(nd::ones($this->args[0]->getArray()->shape()) * $grad);
+                break;
+            case 'sum_axis':
+                // @todo Axis not supported
+                $this->args[0]->backward(nd::ones($this->args[0]->getArray()->shape()) * $grad);
+                break;
             case 'multiply':
                 $this->args[0]->backward($grad * $this->args[1]->getArray());
                 $this->args[1]->backward($this->args[0]->getArray() * $grad);
@@ -119,6 +129,8 @@ class Operation
                     throw new \Exception("Back propagation fatal error.");
                 }
                 break;
+            default:
+                throw new \Exception("Back propagation fatal error.");
         }
     }
 
