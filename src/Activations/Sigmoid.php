@@ -19,8 +19,8 @@ class Sigmoid implements IActivation
      * @throws ValueErrorException
      */
     public function __invoke(Variable $inputs): Variable {
-        $minus_ones = Variable::fromArray(nd::ones($inputs->getShape()) * -1);
-        $ones = Variable::fromArray(nd::ones($inputs->getShape()));
+        $minus_ones = Variable::fromArray(-1);
+        $ones = Variable::fromArray(1);
         $rtn = Variable::divide(
             $ones,
             Variable::add(

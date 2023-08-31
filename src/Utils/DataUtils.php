@@ -2,8 +2,32 @@
 
 namespace NumPower\Lattice\Utils;
 
+use \NDArray as nd;
+
 class DataUtils
 {
+    /**
+     * @param \NDArray $x
+     * @param float $epsilon
+     * @return \NDArray
+     */
+    public static function quickNormalize(\NDArray $x, float $epsilon = 1e-8): \NDArray {
+        $t = nd::transpose($x);
+
+        $mean = nd::zeros([count($t), 1]);
+        $std = nd::zeros([count($t), 1]);
+        foreach ($t as $row => $sample) {
+            print_r($sample);
+            print_r(nd::average($sample));
+            echo "\n================\n";
+            $mean[$row] = nd::average($sample);
+            $std[$row] = nd::std($sample);
+        }
+
+        $std = nd::clip($std, $epsilon, 1 - $epsilon);
+        return nd::transpose(($t - $mean) / $std);
+    }
+
     /**
      * Partition data in mini batches and shuffle it
      *

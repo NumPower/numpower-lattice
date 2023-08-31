@@ -35,9 +35,9 @@ class Variable
     private ?IRegularizer $regularizer;
 
     /**
-     * @var \NDArray
+     * @var \NDArray|float
      */
-    private \NDArray $array;
+    private \NDArray|float $array;
 
     /**
      * @var Operation
@@ -55,9 +55,9 @@ class Variable
     private bool $requireGrad;
 
     /**
-     * @var nd|null
+     * @var float|nd|null
      */
-    private ?\NDArray $grad;
+    private \NDArray|float|null $grad;
 
     /**
      * @param string $name
@@ -86,9 +86,9 @@ class Variable
     }
 
     /**
-     * @return nd
+     * @return nd|float
      */
-    public function getArray(): \NDArray
+    public function getArray(): \NDArray|float
     {
         return $this->array;
     }
@@ -114,27 +114,34 @@ class Variable
     }
 
     /**
-     * @param nd $array
+     * @param nd|float $array
      * @param string $name
      * @param bool $requireGrad
      * @return Variable
      */
-    public static function fromArray(\NDArray $array, string $name = "", bool $requireGrad = False): Variable {
-        $variable = new Variable(
-            name: $name,
-            shape: $array->shape()
-        );
+    public static function fromArray(\NDArray|float $array, string $name = "", bool $requireGrad = False): Variable {
+        if (is_float($array)) {
+            $variable = new Variable(
+                name: $name,
+                shape: []
+            );
+        } else {
+            $variable = new Variable(
+                name: $name,
+                shape: $array->shape()
+            );
+        }
         $variable->overwriteArray($array);
         return $variable;
     }
 
     /**
-     * @param nd $array
+     * @param nd|float $array
      * @return void
      */
-    public function overwriteArray(\NDArray $array): void
+    public function overwriteArray(\NDArray|float $array): void
     {
-        $this->array = nd::clip($array, min: -1.175e38, max: 3.40e+38);
+        $this->array = $array;
     }
 
     /**
@@ -186,7 +193,7 @@ class Variable
      */
     public static function power(Variable $a, Variable $b): Variable
     {
-        $new_var = Variable::fromArray( nd::clip($a->getArray() ** $b->getArray(), min: -1.175e38, max: 3.40e+38));
+        $new_var = Variable::fromArray( $a->getArray() ** $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("power");
         return $new_var;
@@ -200,6 +207,12 @@ class Variable
         return $this->inputs;
     }
 
+    /**
+     * @param Variable $a
+     * @param int $axis
+     * @param bool $keepdim
+     * @return Variable
+     */
     public static function sum_axis(Variable $a, int $axis, bool $keepdim = False): Variable
     {
         $value = nd::sum($a->getArray(), $axis);
@@ -207,10 +220,46 @@ class Variable
             if (count($value->shape()) == 1 && count($value) == 1) {
                 $value = $value[0] * nd::ones($a->getArray()->shape());
             }
+            if (count($value->shape()) == 1 && count($a->getArray()->shape()) == 2) {
+                $value = nd::reshape($value, [count($value), 1]);
+            }
         }
         $new_var = Variable::fromArray($value);
         $new_var->setInputs([$a, $axis, $keepdim]);
         $new_var->registerOperation("sum_axis");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
+     * @param bool $keepdim
+     * @return Variable
+     */
+    public static function sum(Variable $a, bool $keepdim = False): Variable
+    {
+        $value = nd::sum($a->getArray());
+        if ($keepdim) {
+            if (is_float($value)) {
+                $value = nd::ones($a->getArray()->shape()) * $value;
+            } elseif (count($value->shape()) == 1 && count($value) == 1) {
+                $value = $value[0] * nd::ones($a->getArray()->shape());
+            }
+        }
+        $new_var = Variable::fromArray($value);
+        $new_var->setInputs([$a, $keepdim]);
+        $new_var->registerOperation("sum");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
+     * @return Variable
+     */
+    public static function log(Variable $a): Variable
+    {
+        $new_var = Variable::fromArray(nd::log($a->getArray()));
+        $new_var->setInputs([$a]);
+        $new_var->registerOperation("log");
         return $new_var;
     }
 
@@ -223,6 +272,20 @@ class Variable
         $new_var = Variable::fromArray(nd::sqrt($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("sqrt");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable $a
+     * @param float $min
+     * @param float $max
+     * @return Variable
+     */
+    public static function clip(Variable $a, float $min, float $max): Variable
+    {
+        $new_var = Variable::fromArray(nd::clip($a->getArray(), $min, $max));
+        $new_var->setInputs([$a, Variable::fromArray($min), Variable::fromArray($max)]);
+        $new_var->registerOperation("clip");
         return $new_var;
     }
 
@@ -280,7 +343,7 @@ class Variable
      */
     public static function mean(Variable $a): Variable
     {
-        $new_var = Variable::fromArray(nd::array([nd::average($a->getArray())]));
+        $new_var = Variable::fromArray(nd::average($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("mean");
         return $new_var;
@@ -353,14 +416,18 @@ class Variable
     }
 
     /**
-     * @param nd|null $grad
+     * @param nd|float|int|null $grad
      * @return void
      * @throws \Exception
      */
-    public function backward(?\NDArray $grad = NULL)
+    public function backward(\NDArray|float|int $grad = NULL)
     {
         if (!isset($grad)) {
-            $grad = nd::ones($this->getArray()->shape());
+            if (!is_float($this->getArray()) && !is_int($this->getArray())) {
+                $grad = nd::ones($this->getArray()->shape());
+            } else {
+                $grad = 1;
+            }
         }
 
         if ($this->requireGrad) {

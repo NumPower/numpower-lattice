@@ -69,11 +69,11 @@ class Operation
     }
 
     /**
-     * @param \NDArray $grad
+     * @param nd|float|int $grad
      * @return void
      * @throws \Exception
      */
-    public function backward(\NDArray $grad): void
+    public function backward(\NDArray|float|int $grad): void
     {
         switch ($this->getName()) {
             case 'add':
@@ -104,6 +104,9 @@ class Operation
             case 'sum':
                 $this->args[0]->backward(nd::ones($this->args[0]->getArray()->shape()) * $grad);
                 break;
+            case "log":
+                $this->args[0]->backward($grad * (1 / $this->args[0]->getArray()));
+                break;
             case 'sum_axis':
                 // @todo Axis not supported
                 $this->args[0]->backward(nd::ones($this->args[0]->getArray()->shape()) * $grad);
@@ -117,6 +120,11 @@ class Operation
                 break;
             case 'mean':
                 $this->args[0]->backward((nd::ones($this->args[0]->getArray()->shape()) * $grad) / nd::prod(nd::array($this->args[0]->getArray()->shape())));
+                break;
+            case 'clip':
+                $greater = nd::greater_equal($this->args[0]->getArray(), nd::ones($this->args[0]->getArray()->shape()) * $this->args[1]->getArray());
+                $less = nd::less_equal($this->args[0]->getArray(), nd::ones($this->args[0]->getArray()->shape()) * $this->args[2]->getArray());
+                $this->args[0]->backward($grad * $greater * $less);
                 break;
             case 'dot':
                 if (count($grad->shape()) == 1) {

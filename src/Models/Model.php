@@ -158,7 +158,7 @@ class Model extends Layer implements IModel
      * @param callable|null $epochCallback
      * @return void
      */
-    public function fit(\NDArray $x, \NDArray $y, ?int $batchSize = NULL,
+    public function fit(\NDArray $x, \NDArray $y, ?int $batchSize = 8,
                         int $epochs = 1, ?float $validationSplit = 0.0,
                         ?array $validationData = NULL, ?bool $shuffle = True,
                         ?string $epochCallback = NULL): void
@@ -172,10 +172,14 @@ class Model extends Layer implements IModel
                 $this->epochPrinter->update($idx+1, count($x));
                 $sum_loss = $loss->getArray();
             }
-            echo "\nloss: ". ($sum_loss/count($x))[0];
+            if (!is_float($sum_loss)) {
+                echo "\nloss: " . ($sum_loss / count($x))[0];
+            } else {
+                echo "\nloss: " . ($sum_loss / count($x));
+            }
             $this->epochPrinter->stop();
             if (isset($epochCallback)) {
-                call_user_func($epochCallback, $i, $this, $metrics, ($sum_loss/count($x))[0], $outputs);
+                call_user_func($epochCallback, $i, $this, $metrics, ($sum_loss/count($x)), $outputs);
             }
         }
     }
