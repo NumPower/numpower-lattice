@@ -193,9 +193,10 @@ class Layer implements ILayer
 
     /**
      * @param Variable $inputs
+     * @param bool $training
      * @return Variable
      */
-    function __invoke(Variable $inputs): Variable
+    function __invoke(Variable $inputs, bool $training = False): Variable
     {
         return $inputs;
     }

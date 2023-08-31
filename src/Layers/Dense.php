@@ -113,10 +113,14 @@ class Dense extends Layer
 
     /**
      * @param Variable $inputs
+     * @param bool $training
      * @return Variable
      * @throws ValueErrorException
      */
-    public function __invoke(Variable $inputs): Variable {
+    public function __invoke(Variable $inputs, bool $training = False): Variable {
+        if (!$this->built()) {
+            $this->build($inputs->shape());
+        }
         $outputs = Variable::dot($inputs, $this->kernel);
         if ($this->useBias) {
             $outputs = Variable::add($outputs, $this->bias);

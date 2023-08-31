@@ -105,7 +105,7 @@ class Model extends Layer implements IModel
         $x_var = Variable::fromArray($x, name: "x");
         $outputs = $x_var;
         foreach ($this->getLayers() as $layer) {
-            $outputs = $layer($outputs);
+            $outputs = $layer($outputs, training: True);
         }
         if (isset($this->lossFunction)) {
             $loss = $this->computeLoss($y, $outputs);
@@ -195,7 +195,7 @@ class Model extends Layer implements IModel
             $x_var = Variable::fromArray(nd::reshape($sample, [1, count($sample)]), name: "x");
             $outputs = $x_var;
             foreach ($this->getLayers() as $layer) {
-                $outputs = $layer($outputs);
+                $outputs = $layer($outputs, training: False);
             }
             $outputs_p[] = $outputs->getArray();
         }

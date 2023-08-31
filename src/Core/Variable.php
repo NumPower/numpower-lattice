@@ -163,12 +163,18 @@ class Variable
     }
 
     /**
-     * @param Variable $a
-     * @param Variable $b
+     * @param Variable|float|int $a
+     * @param Variable|float|int $b
      * @return Variable
      */
-    public static function divide(Variable $a, Variable $b): Variable
+    public static function divide(Variable|float|int $a, Variable|float|int $b): Variable
     {
+        if (is_int($a) || is_float($a)) {
+            $a = Variable::fromArray($a);
+        }
+        if (is_int($b) || is_float($b)) {
+            $b = Variable::fromArray($b);
+        }
         $new_var = Variable::fromArray( $a->getArray() / $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("divide");
