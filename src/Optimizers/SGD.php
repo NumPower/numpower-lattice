@@ -16,7 +16,7 @@ class SGD extends Optimizer
     private float $learningRate;
 
     /**
-     * @param float $learningRate
+     * @param float $lr
      */
     public function __construct(float $lr=0.01)
     {

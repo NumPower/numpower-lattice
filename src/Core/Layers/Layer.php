@@ -42,9 +42,14 @@ class Layer implements ILayer
      */
     private ?string $name;
 
-    public function __construct() {
+    /**
+     * @param string $name
+     * @param bool $trainable
+     */
+    public function __construct(string $name, bool $trainable = False) {
         $this->built = False;
-        $this->trainable = False;
+        $this->trainable = $trainable;
+        $this->setName($name);
     }
 
     /**

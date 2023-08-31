@@ -82,7 +82,8 @@ class Dense extends Layer
         $this->kernelRegularizer = $kernelRegularizer;
         $this->biasRegularizer = $biasRegularizer;
         $this->setName("dense_" . substr(uniqid(), -4));
-        parent::__construct();
+        $this->built = false;
+        $this->trainable = true;
     }
 
     /**

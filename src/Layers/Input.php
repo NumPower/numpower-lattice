@@ -20,6 +20,7 @@ class Input extends Layer
         $this->inputShape = $shape;
         $this->batchSize = $batchSize;
         ($name) ? $this->setName($name) : $this->setName("input_". substr(uniqid(), -4));
-        parent::__construct();
+        $this->trainable = false;
+        $this->built = false;
     }
 }
