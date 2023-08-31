@@ -21,7 +21,7 @@ class RandomUniform implements IInitializer
      * @param float $min
      * @param float $max
      */
-    public function __construct(float $min = 0.0, float $max = 0.9) {
+    public function __construct(float $min = 0.0, float $max = 1.0) {
         $this->min = $min;
         $this->max = $max;
     }
