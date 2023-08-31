@@ -163,19 +163,34 @@ class Model extends Layer implements IModel
                         ?array $validationData = NULL, ?bool $shuffle = True,
                         ?string $epochCallback = NULL): void
     {
-
+        $left = False;
+        $total_batches = intdiv(count($x), $batchSize);
+        if (count($x) % $batchSize != 0) {
+            $left = count($x) % $batchSize;
+            $total_batches += 1;
+        }
         for ($i = 0; $i < $epochs; $i++) {
+            $sum_loss = 0;
             $this->epochPrinter->start($i, $epochs, "CPU");
-            $sum_loss = Variable::fromArray(nd::array([0]));
-            foreach ($x as $idx => $sample) {
-                [$metrics, $loss, $outputs] = $this->trainStep(nd::reshape($sample, [1, count($sample)]), $y[$idx]);
-                $this->epochPrinter->update($idx+1, count($x));
-                $sum_loss = $loss->getArray();
+            for ($i_batch = 0; $i_batch < $total_batches; $i_batch++) {
+                if ($i_batch == $total_batches - 1 && $left) {
+                    $epoch_update_printer = count($x);
+                    $current_batch_x = $x->slice([($i_batch * $batchSize) - ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
+                    $current_batch_y = $y->slice([($i_batch * $batchSize) - ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
+                } else {
+                    $epoch_update_printer = $batchSize * ($i_batch + 1);
+                    $current_batch_x = $x->slice([$i_batch * $batchSize, ($i_batch * $batchSize) + $batchSize]);
+                    $current_batch_y = $y->slice([$i_batch * $batchSize, ($i_batch * $batchSize) + $batchSize]);
+                }
+                [$metrics, $loss, $outputs] = $this->trainStep($current_batch_x, $current_batch_y);
+                $sum_loss += $loss->getArray();
+
+                $this->epochPrinter->update($epoch_update_printer, count($x));
             }
             if (!is_float($sum_loss)) {
-                echo "\nloss: " . ($sum_loss / count($x))[0];
+                echo "\nloss: " . ($sum_loss / $total_batches)[0];
             } else {
-                echo "\nloss: " . ($sum_loss / count($x));
+                echo "\nloss: " . ($sum_loss / $total_batches);
             }
             $this->epochPrinter->stop();
             if (isset($epochCallback)) {
@@ -190,16 +205,12 @@ class Model extends Layer implements IModel
      */
     public function predict($x)
     {
-        $outputs_p = [];
-        foreach ($x as $idx => $sample) {
-            $x_var = Variable::fromArray(nd::reshape($sample, [1, count($sample)]), name: "x");
-            $outputs = $x_var;
-            foreach ($this->getLayers() as $layer) {
-                $outputs = $layer($outputs, training: False);
-            }
-            $outputs_p[] = $outputs->getArray();
+        $x_var = Variable::fromArray($x, name: "x");
+        $outputs = $x_var;
+        foreach ($this->getLayers() as $layer) {
+            $outputs = $layer($outputs, training: False);
         }
-        return $outputs_p;
+        return $outputs->getArray();
     }
 
     /**

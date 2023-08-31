@@ -17,9 +17,6 @@ class DataUtils
         $mean = nd::zeros([count($t), 1]);
         $std = nd::zeros([count($t), 1]);
         foreach ($t as $row => $sample) {
-            print_r($sample);
-            print_r(nd::average($sample));
-            echo "\n================\n";
             $mean[$row] = nd::average($sample);
             $std[$row] = nd::std($sample);
         }

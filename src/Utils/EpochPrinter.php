@@ -51,7 +51,7 @@ class EpochPrinter
         $eta = (int)(($elapsedTime / $step) * ($totalSteps - $step));
         $string .= " Elapsed: " . gmdate("H:i:s", $elapsedTime);
         $string .= " ETA: " . gmdate("H:i:s", $eta);
-        echo $string;
+        print $string;
     }
 
     /**
