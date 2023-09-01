@@ -2,13 +2,12 @@
 
 namespace NumPower\Lattice\Core;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Regularizers\IRegularizer;
 use NumPower\Lattice\Exceptions\ValueErrorException;
-use NumPower\Lattice\IGrad;
 
-class Variable
+class Tensor
 {
     /**
      * @var ?string
@@ -75,7 +74,8 @@ class Variable
         ?bool         $trainable = false,
         ?IRegularizer $regularizer = null,
         bool          $requireGrad = true
-    ) {
+    )
+    {
         $this->requireGrad = $requireGrad;
         $this->name = $name;
         $this->shape = $shape;
@@ -105,6 +105,7 @@ class Variable
 
     /**
      * @param string $name
+     * @param IGrad|null $callable
      * @return Operation
      */
     public function registerOperation(string $name, ?IGrad $callable = null): Operation
@@ -118,17 +119,17 @@ class Variable
      * @param nd|float $array
      * @param string $name
      * @param bool $requireGrad
-     * @return Variable
+     * @return Tensor
      */
-    public static function fromArray(\NDArray|float $array, string $name = "", bool $requireGrad = false): Variable
+    public static function fromArray(\NDArray|float $array, string $name = "", bool $requireGrad = false): Tensor
     {
         if (is_float($array)) {
-            $variable = new Variable(
+            $variable = new Tensor(
                 name: $name,
                 shape: []
             );
         } else {
-            $variable = new Variable(
+            $variable = new Tensor(
                 name: $name,
                 shape: $array->shape()
             );
@@ -144,35 +145,50 @@ class Variable
     public function overwriteArray(\NDArray|float $array): void
     {
         $this->array = $array;
+        $this->grad = NULL;
+        unset($this->tape);
     }
 
     /**
-     * @param Variable $a
-     * @param Variable $b
-     * @return Variable
+     * @param Tensor $a
+     * @param Tensor $b
+     * @return Tensor
      */
-    public static function dot(Variable $a, Variable $b): Variable
+    public static function dot(Tensor $a, Tensor $b): Tensor
     {
-        $new_var = Variable::fromArray(nd::dot($a->getArray(), $b->getArray()));
+        $new_var = Tensor::fromArray(nd::dot($a->getArray(), $b->getArray()));
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("dot");
         return $new_var;
     }
 
     /**
-     * @param Variable|int|float $a
-     * @param int|float|Variable $b
-     * @return Variable
+     * @param Tensor $a
+     * @param array $newShape
+     * @return Tensor
      */
-    public static function maximum(Variable|int|float $a, Variable|int|float $b): Variable
+    public static function reshape(Tensor $a, array $newShape): Tensor
+    {
+        $new_var = Tensor::fromArray(nd::reshape($a->getArray(), $newShape));
+        $new_var->setInputs([$a, $newShape]);
+        $new_var->registerOperation("reshape");
+        return $new_var;
+    }
+
+    /**
+     * @param Tensor|int|float $a
+     * @param int|float|Tensor $b
+     * @return Tensor
+     */
+    public static function maximum(Tensor|int|float $a, Tensor|int|float $b): Tensor
     {
         if (is_int($a) || is_float($a)) {
-            $a = Variable::fromArray($a);
+            $a = Tensor::fromArray($a);
         }
         if (is_int($b) || is_float($b)) {
-            $b = Variable::fromArray($b);
+            $b = Tensor::fromArray($b);
         }
-        $new_var = Variable::fromArray(nd::maximum($a->getArray(), $b->getArray()));
+        $new_var = Tensor::fromArray(nd::maximum($a->getArray(), $b->getArray()));
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("maximum");
         return $new_var;
@@ -184,51 +200,51 @@ class Variable
     }
 
     /**
-     * @param Variable|float|int $a
-     * @param Variable|float|int $b
-     * @return Variable
+     * @param Tensor|float|int $a
+     * @param Tensor|float|int $b
+     * @return Tensor
      */
-    public static function divide(Variable|float|int $a, Variable|float|int $b): Variable
+    public static function divide(Tensor|float|int $a, Tensor|float|int $b): Tensor
     {
         if (is_int($a) || is_float($a)) {
-            $a = Variable::fromArray($a);
+            $a = Tensor::fromArray($a);
         }
         if (is_int($b) || is_float($b)) {
-            $b = Variable::fromArray($b);
+            $b = Tensor::fromArray($b);
         }
-        $new_var = Variable::fromArray($a->getArray() / $b->getArray());
+        $new_var = Tensor::fromArray($a->getArray() / $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("divide");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @return Variable
+     * @param Tensor $a
+     * @return Tensor
      */
-    public static function abs(Variable $a): Variable
+    public static function abs(Tensor $a): Tensor
     {
-        $new_var = Variable::fromArray(nd::abs($a->getArray()));
+        $new_var = Tensor::fromArray(nd::abs($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("abs");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @param Variable $b
-     * @return Variable
+     * @param Tensor $a
+     * @param Tensor $b
+     * @return Tensor
      */
-    public static function power(Variable $a, Variable $b): Variable
+    public static function power(Tensor $a, Tensor $b): Tensor
     {
-        $new_var = Variable::fromArray($a->getArray() ** $b->getArray());
+        $new_var = Tensor::fromArray($a->getArray() ** $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("power");
         return $new_var;
     }
 
     /**
-     * @return Variable[]
+     * @return Tensor[]
      */
     public function getInputs(): array
     {
@@ -236,12 +252,12 @@ class Variable
     }
 
     /**
-     * @param Variable $a
+     * @param Tensor $a
      * @param int $axis
      * @param bool $keepdim
-     * @return Variable
+     * @return Tensor
      */
-    public static function sum_axis(Variable $a, int $axis, bool $keepdim = false): Variable
+    public static function sum_axis(Tensor $a, int $axis, bool $keepdim = false): Tensor
     {
         $value = nd::sum($a->getArray(), $axis);
         if ($keepdim) {
@@ -252,18 +268,18 @@ class Variable
                 $value = nd::reshape($value, [count($value), 1]);
             }
         }
-        $new_var = Variable::fromArray($value);
+        $new_var = Tensor::fromArray($value);
         $new_var->setInputs([$a, $axis, $keepdim]);
         $new_var->registerOperation("sum_axis");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
+     * @param Tensor $a
      * @param bool $keepdim
-     * @return Variable
+     * @return Tensor
      */
-    public static function sum(Variable $a, bool $keepdim = false): Variable
+    public static function sum(Tensor $a, bool $keepdim = false): Tensor
     {
         $value = nd::sum($a->getArray());
         if ($keepdim) {
@@ -273,70 +289,70 @@ class Variable
                 $value = $value[0] * nd::ones($a->getArray()->shape());
             }
         }
-        $new_var = Variable::fromArray($value);
+        $new_var = Tensor::fromArray($value);
         $new_var->setInputs([$a, $keepdim]);
         $new_var->registerOperation("sum");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @return Variable
+     * @param Tensor $a
+     * @return Tensor
      */
-    public static function log(Variable $a): Variable
+    public static function log(Tensor $a): Tensor
     {
-        $new_var = Variable::fromArray(nd::log($a->getArray()));
+        $new_var = Tensor::fromArray(nd::log($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("log");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @return Variable
+     * @param Tensor $a
+     * @return Tensor
      */
-    public static function sqrt(Variable $a): Variable
+    public static function sqrt(Tensor $a): Tensor
     {
-        $new_var = Variable::fromArray(nd::sqrt($a->getArray()));
+        $new_var = Tensor::fromArray(nd::sqrt($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("sqrt");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
+     * @param Tensor $a
      * @param float $min
      * @param float $max
-     * @return Variable
+     * @return Tensor
      */
-    public static function clip(Variable $a, float $min, float $max): Variable
+    public static function clip(Tensor $a, float $min, float $max): Tensor
     {
-        $new_var = Variable::fromArray(nd::clip($a->getArray(), $min, $max));
-        $new_var->setInputs([$a, Variable::fromArray($min), Variable::fromArray($max)]);
+        $new_var = Tensor::fromArray(nd::clip($a->getArray(), $min, $max));
+        $new_var->setInputs([$a, Tensor::fromArray($min), Tensor::fromArray($max)]);
         $new_var->registerOperation("clip");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @param Variable $b
-     * @return Variable
+     * @param Tensor $a
+     * @param Tensor $b
+     * @return Tensor
      */
-    public static function subtract(Variable $a, Variable $b): Variable
+    public static function subtract(Tensor $a, Tensor $b): Tensor
     {
-        $new_var = Variable::fromArray($a->getArray() - $b->getArray());
+        $new_var = Tensor::fromArray($a->getArray() - $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("subtract");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @param Variable $b
+     * @param Tensor $a
+     * @param Tensor $b
      * @return $this
      * @throws ValueErrorException
      */
-    public static function add(Variable $a, Variable $b): Variable
+    public static function add(Tensor $a, Tensor $b): Tensor
     {
         $new_var = self::fromArray(nd::add($a->getArray(), $b->getArray()));
         $new_var->setInputs([$a, $b]);
@@ -357,7 +373,7 @@ class Variable
      * @return $this
      * @throws ValueErrorException
      */
-    public static function exp(Variable $a): Variable
+    public static function exp(Tensor $a): Tensor
     {
         $new_var = self::fromArray(nd::exp($a->getArray()));
         $new_var->setInputs([$a]);
@@ -366,25 +382,25 @@ class Variable
     }
 
     /**
-     * @param Variable $a
-     * @return Variable
+     * @param Tensor $a
+     * @return Tensor
      */
-    public static function mean(Variable $a): Variable
+    public static function mean(Tensor $a): Tensor
     {
-        $new_var = Variable::fromArray(nd::average($a->getArray()));
+        $new_var = Tensor::fromArray(nd::average($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("mean");
         return $new_var;
     }
 
     /**
-     * @param Variable $a
-     * @param Variable $b
-     * @return Variable
+     * @param Tensor $a
+     * @param Tensor $b
+     * @return Tensor
      */
-    public static function multiply(Variable $a, Variable $b): Variable
+    public static function multiply(Tensor $a, Tensor $b): Tensor
     {
-        $new_var = Variable::fromArray($a->getArray() * $b->getArray());
+        $new_var = Tensor::fromArray($a->getArray() * $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation('multiply');
         return $new_var;
@@ -434,12 +450,12 @@ class Variable
     }
 
     /**
-     * @param Variable $a
-     * @return Variable
+     * @param Tensor $a
+     * @return Tensor
      */
-    public static function tanh(Variable $a): Variable
+    public static function tanh(Tensor $a): Tensor
     {
-        $new_var = Variable::fromArray(nd::tanh($a->getArray()));
+        $new_var = Tensor::fromArray(nd::tanh($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("tanh");
         return $new_var;

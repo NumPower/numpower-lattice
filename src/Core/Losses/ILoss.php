@@ -3,14 +3,14 @@
 namespace NumPower\Lattice\Core\Losses;
 
 use NDArray;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 
 interface ILoss
 {
     /**
 * @param NDArray $true
-* @param Variable $pred
-* @return Variable
+* @param Tensor $pred
+* @return Tensor
      */
-    public function __invoke(NDArray $true, Variable $pred): Variable;
+    public function __invoke(NDArray $true, Tensor $pred): Tensor;
 }

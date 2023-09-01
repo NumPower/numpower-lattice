@@ -62,7 +62,11 @@ class DataUtils
             $rtn_payload["batches_y"][] = $y->slice([$i * $batchSize, ($i * $batchSize) + $batchSize]);
         }
 
-        print_r($rtn_payload);
         return $rtn_payload;
+    }
+
+    public static function quickNormalize2(mixed $x)
+    {
+        return ($x - (-1)) / (1 - (-1)) * 2 - 1;
     }
 }

@@ -3,17 +3,17 @@
 namespace NumPower\Lattice\Core\Optimizers;
 
 use NumPower\Lattice\Core\Models\IModel;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Models\Model;
 
 interface IOptimizer
 {
     /**
-     * @param Variable $error
+     * @param Tensor $error
      * @param Model $model
      * @return void
      */
-    public function __invoke(Variable $error, Model $model): void;
+    public function __invoke(Tensor $error, Model $model): void;
 
     /**
      * @param IModel $model

@@ -5,7 +5,7 @@ namespace NumPower\Lattice\Optimizers;
 use Exception;
 use NDArray as nd;
 use NumPower\Lattice\Core\Optimizers\Optimizer;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Models\Model;
 
 class SGD extends Optimizer
@@ -24,12 +24,12 @@ class SGD extends Optimizer
     }
 
     /**
-     * @param Variable $error
+     * @param Tensor $error
      * @param Model $model
      * @return void
      * @throws Exception
      */
-    public function __invoke(Variable $error, Model $model): void
+    public function __invoke(Tensor $error, Model $model): void
     {
         $error->backward();
         foreach (array_reverse($model->getLayers(), true) as $layer) {

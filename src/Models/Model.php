@@ -8,7 +8,7 @@ use NumPower\Lattice\Core\Layers\Layer;
 use NumPower\Lattice\Core\Losses\ILoss;
 use NumPower\Lattice\Core\Models\IModel;
 use NumPower\Lattice\Core\Optimizers\IOptimizer;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Exceptions\ValueErrorException;
 use NumPower\Lattice\Utils\EpochPrinter;
 use NumPower\Lattice\Utils\LayerUtils;
@@ -91,10 +91,10 @@ class Model extends Layer implements IModel
 
     /**
      * @param nd $y
-     * @param Variable $outputs
-     * @return Variable
+     * @param Tensor $outputs
+     * @return Tensor
      */
-    public function computeLoss(nd $y, Variable $outputs): Variable
+    public function computeLoss(nd $y, Tensor $outputs): Tensor
     {
         return $this->getLossFunction()($y, $outputs);
     }
@@ -106,7 +106,7 @@ class Model extends Layer implements IModel
      */
     public function trainStep(nd $x, nd $y): array
     {
-        $x_var = Variable::fromArray($x, name: "x");
+        $x_var = Tensor::fromArray($x, name: "x");
         $outputs = $x_var;
         foreach ($this->getLayers() as $layer) {
             $outputs = $layer($outputs, training: true);
@@ -176,6 +176,9 @@ class Model extends Layer implements IModel
     ): void {
         $left = false;
         $total_batches = intdiv(count($x), $batchSize);
+        foreach ($this->layers as $layer) {
+            $layer->setBatchSize($batchSize);
+        }
         if (count($x) % $batchSize != 0) {
             $left = count($x) % $batchSize;
             $total_batches += 1;
@@ -185,25 +188,24 @@ class Model extends Layer implements IModel
             $this->epochPrinter->start($i, $epochs, "CPU");
             for ($i_batch = 0; $i_batch < $total_batches; $i_batch++) {
                 if ($i_batch == $total_batches - 1 && $left) {
-                    $epoch_update_printer = count($x);
                     $current_batch_x = $x->slice([($i_batch * $batchSize) -
                         ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
                     $current_batch_y = $y->slice([($i_batch * $batchSize) -
                         ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
                 } else {
-                    $epoch_update_printer = $batchSize * ($i_batch + 1);
                     $current_batch_x = $x->slice([$i_batch * $batchSize, ($i_batch * $batchSize) + $batchSize]);
                     $current_batch_y = $y->slice([$i_batch * $batchSize, ($i_batch * $batchSize) + $batchSize]);
                 }
                 [$metrics, $loss, $outputs] = $this->trainStep($current_batch_x, $current_batch_y);
                 $sum_loss += $loss->getArray();
 
-                $this->epochPrinter->update($epoch_update_printer, count($x));
-            }
-            if (!is_float($sum_loss)) {
-                echo "\nloss: " . ($sum_loss / $total_batches)[0];
-            } else {
-                echo "\nloss: " . ($sum_loss / $total_batches);
+
+                if (!is_float($sum_loss)) {
+                    $total_loss = ($sum_loss / ($i_batch + 1))[0];
+                } else {
+                    $total_loss = ($sum_loss / ($i_batch + 1));
+                }
+                $this->epochPrinter->update($i_batch + 1, $total_batches, $total_loss);
             }
             $this->epochPrinter->stop();
             if (isset($epochCallback)) {
@@ -218,10 +220,10 @@ class Model extends Layer implements IModel
      */
     public function predict(nd $x): nd
     {
-        $x_var = Variable::fromArray($x, name: "x");
+        $x_var = Tensor::fromArray($x, name: "x");
         $outputs = $x_var;
         foreach ($this->getLayers() as $layer) {
-            $outputs = $layer($outputs);
+            $outputs = $layer($outputs, training: false);
         }
         return $outputs->getArray();
     }

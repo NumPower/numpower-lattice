@@ -2,13 +2,13 @@
 
 namespace NumPower\Lattice\Core\Activations;
 
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 
 interface IActivation
 {
     /**
-     * @param Variable $inputs
-     * @return Variable
+     * @param Tensor $inputs
+     * @return Tensor
      */
-    function __invoke(Variable $inputs): Variable;
+    function __invoke(Tensor $inputs): Tensor;
 }

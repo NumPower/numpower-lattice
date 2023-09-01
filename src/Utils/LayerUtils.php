@@ -4,7 +4,7 @@ namespace NumPower\Lattice\Utils;
 
 use \NDArray as nd;
 use NumPower\Lattice\Core\Layers\ILayer;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Models\Model;
 
 class LayerUtils
@@ -21,15 +21,15 @@ class LayerUtils
         $output_shape_str = "(";
         $output_shape = $layer->generateOutputShape();
         foreach ($output_shape as $idx => $s) {
-            if ($idx == 0 && count($output_shape) > 1) {
+            if ($s == null) {
+                $output_shape_str .= "NULL";
+                continue;
+            }
+            if ($idx == 0) {
                 $output_shape_str .= $s;
                 continue;
             }
-            if (count($output_shape) == 1) {
-                $output_shape_str .= "NULL, " . $s;
-                continue;
-            }
-            $output_shape_str .= ',' . $s;
+            $output_shape_str .= ', ' . $s;
         }
         $output_shape_str .= ")";
         $name = $layer->getName();
@@ -69,6 +69,8 @@ class LayerUtils
             $end_pos = $positions[$col];
 
             (count($left_to_print) - 1 != $col) ? $space = 2 : $space = 0;
+
+
             $cutoff = $end_pos - $start_pos - $space;
 
             $fit_into_line = $left_to_print[$col];
@@ -79,14 +81,36 @@ class LayerUtils
                 $cutoff -= $nested_level;
             }
 
+            $line_break_conditions = [")", ", ", ", ", "],", "',"];
+            $candidate_cutoffs = [];
+            foreach ($line_break_conditions as $x) {
+                if (strstr($fit_into_line, $x)) {
+                    $candidate_cutoffs[] = strpos($fit_into_line, $x) + strlen($x);
+                }
+            }
+
+            if (count($candidate_cutoffs)) {
+                $cutoff = min($candidate_cutoffs);
+                //$fit_into_line = substr($fit_into_line, 0, $cutoff);
+            }
+
             if ($col == 0) {
-                $line .= str_repeat("|", 1 + $nested_level) . " ";
+                $line .= str_repeat("|", $nested_level) . " ";
             }
 
             $line .= $fit_into_line;
-            $line .= str_repeat("\t", 1);
+            $line .= str_repeat(($space)? " " : "", $space);
+            $left_to_print[$col] = substr($left_to_print[$col], 0, floor($cutoff));
+
+            if ($nested_level && $col == count($positions) - 1) {
+                $line .= str_repeat(" ", ((int)$positions[$col] - strlen($line) - strlen($nested_level)));
+            } else {
+                if ((int)$positions[$col] - strlen($line) >= 0) {
+                    $line .= str_repeat(" ", (int)$positions[$col] - strlen($line));
+                }
+            }
         }
-        $line .= str_repeat(" |", 1 + $nested_level);
+        $line .= str_repeat(" |", $nested_level);
         print($line . "\n");
     }
 
@@ -98,7 +122,7 @@ class LayerUtils
     public static function printSummary(Model $model, bool $showTrainable = true)
     {
         $line_length = 65;
-        $positions = [0.45, 0.85, 1.0];
+        $positions = [32, 52, 67, 82];
         $to_display = ["Layer (type)", "Output Shape", "Param #"];
 
         if ($showTrainable) {
@@ -137,7 +161,7 @@ class LayerUtils
     }
 
     /**
-     * @param Variable[] $weights
+     * @param Tensor[] $weights
      * @return int
      */
     public static function countParams(array $weights): int

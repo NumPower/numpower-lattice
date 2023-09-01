@@ -4,7 +4,7 @@ namespace NumPower\Lattice\Activations;
 
 use NDArray as nd;
 use NumPower\Lattice\Core\Activations\IActivation;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Exceptions\ValueErrorException;
 
 /**
@@ -14,19 +14,19 @@ use NumPower\Lattice\Exceptions\ValueErrorException;
 class Sigmoid implements IActivation
 {
     /**
-     * @param Variable $inputs
-     * @return Variable
+     * @param Tensor $inputs
+     * @return Tensor
      * @throws ValueErrorException
      */
-    public function __invoke(Variable $inputs): Variable
+    public function __invoke(Tensor $inputs): Tensor
     {
-        $minus_ones = Variable::fromArray(-1);
-        $ones = Variable::fromArray(1);
-        return Variable::divide(
+        $minus_ones = Tensor::fromArray(-1);
+        $ones = Tensor::fromArray(1);
+        return Tensor::divide(
             $ones,
-            Variable::add(
-                Variable::exp(
-                    Variable::multiply($inputs, $minus_ones)
+            Tensor::add(
+                Tensor::exp(
+                    Tensor::multiply($inputs, $minus_ones)
                 ),
                 $ones
             )

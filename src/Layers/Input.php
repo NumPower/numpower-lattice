@@ -18,7 +18,7 @@ class Input extends Layer
      */
     public function __construct(array $shape, ?int $batchSize = null, ?string $name = null)
     {
-        $this->inputShape = $shape;
+        $this->setInputShape(array_merge([$batchSize], $shape));
         $this->batchSize = $batchSize;
         ($name) ? $this->setName($name) : $this->setName("input_" . substr(uniqid(), -4));
         $this->trainable = false;

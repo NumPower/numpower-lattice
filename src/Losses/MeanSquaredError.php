@@ -4,23 +4,23 @@ namespace NumPower\Lattice\Losses;
 
 use NDArray as nd;
 use NumPower\Lattice\Core\Losses\Loss;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 
 class MeanSquaredError extends Loss
 {
     /**
      * @param nd $true
-     * @param Variable $pred
-     * @return Variable
+     * @param Tensor $pred
+     * @return Tensor
      */
-    public function __invoke(nd $true, Variable $pred): Variable
+    public function __invoke(nd $true, Tensor $pred): Tensor
     {
-        $true = Variable::fromArray($true);
+        $true = Tensor::fromArray($true);
         $twos = nd::ones($pred->shape()) * 2;
         if ($true->getArray()->isGPU()) {
             $twos = $twos->gpu();
         }
-        $twos = Variable::fromArray($twos);
-        return Variable::mean(Variable::power(Variable::subtract($true, $pred), $twos));
+        $twos = Tensor::fromArray($twos);
+        return Tensor::mean(Tensor::power(Tensor::subtract($true, $pred), $twos));
     }
 }

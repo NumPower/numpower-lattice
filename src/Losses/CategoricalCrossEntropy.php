@@ -5,10 +5,10 @@ namespace NumPower\Lattice\Losses;
 use Exception;
 use NDArray;
 use NDArray as nd;
+use NumPower\Lattice\Core\IGrad;
 use NumPower\Lattice\Core\Losses\Loss;
 use NumPower\Lattice\Core\Operation;
-use NumPower\Lattice\Core\Variable;
-use NumPower\Lattice\IGrad;
+use NumPower\Lattice\Core\Tensor;
 
 class CategoricalCrossEntropy extends Loss implements IGrad
 {
@@ -27,24 +27,24 @@ class CategoricalCrossEntropy extends Loss implements IGrad
 
     /**
      * @param nd $true
-     * @param Variable $pred
-     * @return Variable
+     * @param Tensor $pred
+     * @return Tensor
      */
-    public function __invoke(nd $true, Variable $pred): Variable
+    public function __invoke(nd $true, Tensor $pred): Tensor
     {
 
-        $true = Variable::fromArray($true);
-        $output = Variable::divide($pred, Variable::sum_axis($pred, axis: 1, keepdim: true));
-        $m_ones = Variable::fromArray(-1);
-        $out = Variable::clip($output, $this->epsilon, 1 - $this->epsilon);
-        $out = Variable::divide(
-            Variable::multiply(
-                Variable::sum(
-                    Variable::multiply($true, Variable::log($out))
+        $true = Tensor::fromArray($true);
+        $output = Tensor::divide($pred, Tensor::sum_axis($pred, axis: 1, keepdim: true));
+        $m_ones = Tensor::fromArray(-1);
+        $out = Tensor::clip($output, $this->epsilon, 1 - $this->epsilon);
+        $out = Tensor::divide(
+            Tensor::multiply(
+                Tensor::sum(
+                    Tensor::multiply($true, Tensor::log($out))
                 ),
                 $m_ones
             ),
-            Variable::fromArray(count($true->getArray()))
+            Tensor::fromArray(count($true->getArray()))
         );
         $out->setInputs([$true, $pred]);
         $out->registerOperation("cce", $this);

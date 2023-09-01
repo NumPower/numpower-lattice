@@ -26,7 +26,7 @@ class EpochPrinter
      * @param int $total
      * @return void
      */
-    public function update(int $current, int $total): void
+    public function update(int $current, int $total, float $totalLoss): void
     {
         $string = "";
         $rotatingCharacters = ["\u{25DC}", "\u{25DD}", "\u{25DE}", "\u{25DF}"];
@@ -51,8 +51,9 @@ class EpochPrinter
 
         $elapsedTime = time() - $this->startTime;
         $eta = (int)(($elapsedTime / $step) * ($totalSteps - $step));
-        $string .= " Elapsed: " . gmdate("H:i:s", $elapsedTime);
+        $string .= " " . gmdate("H:i:s", $elapsedTime);
         $string .= " ETA: " . gmdate("H:i:s", $eta);
+        $string .= " loss: " . $totalLoss;
         print $string;
     }
 

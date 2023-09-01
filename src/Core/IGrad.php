@@ -1,9 +1,8 @@
 <?php
 
-namespace NumPower\Lattice;
+namespace NumPower\Lattice\Core;
 
 use NDArray as nd;
-use NumPower\Lattice\Core\Operation;
 
 interface IGrad
 {

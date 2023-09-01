@@ -2,8 +2,7 @@
 
 namespace NumPower\Lattice\Core;
 
-use \NDArray as nd;
-use NumPower\Lattice\IGrad;
+use NDArray as nd;
 
 class Operation
 {
@@ -13,7 +12,7 @@ class Operation
     private string $name;
 
     /**
-     * @var Variable[]
+     * @var Tensor[]
      */
     private array $args;
 
@@ -144,6 +143,9 @@ class Operation
                 $less = nd::less_equal($this->getArgs()[0]->getArray(), nd::ones($this->getArgs()[0]->getArray()->shape()) * $this->args[2]->getArray());
                 $this->getArgs()[0]->backward($grad * $greater * $less);
                 break;
+            case 'reshape':
+                $this->getArgs()[0]->backward(nd::reshape($grad, $this->getArgs()[0]->getShape()));
+                break;
             case 'dot':
                 if (count($grad->shape()) == 1) {
                     $grad = nd::reshape($grad, [1, count($grad)]);
@@ -157,7 +159,7 @@ class Operation
                 break;
             default:
                 if (!isset($this->backwardFunction)) {
-                    throw new \Exception("Back propagation fatal error.");
+                    throw new \Exception("($this->name) Back propagation fatal error.");
                 } else {
                     $this->backwardFunction->backward($grad, $this);
                 }

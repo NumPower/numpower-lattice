@@ -7,8 +7,9 @@ use NumPower\Lattice\Core\Activations\IActivation;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Layers\Layer;
 use NumPower\Lattice\Core\Regularizers\IRegularizer;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Exceptions\ValueErrorException;
+use NumPower\Lattice\Initializers\Zeros;
 
 class Dense extends Layer
 {
@@ -48,14 +49,14 @@ class Dense extends Layer
     private ?IRegularizer $biasRegularizer;
 
     /**
-     * @var Variable
+     * @var Tensor
      */
-    private Variable $kernel;
+    private Tensor $kernel;
 
     /**
-     * @var Variable
+     * @var Tensor
      */
-    private Variable $bias;
+    private Tensor $bias;
 
     /**
      * @param int $units
@@ -101,6 +102,9 @@ class Dense extends Layer
             trainable: true
         );
         if ($this->useBias) {
+            if (!isset($this->biasInitializer)) {
+                $this->biasInitializer = new Zeros();
+            }
             $this->bias = $this->addWeight(
                 name: "bias",
                 shape: [$this->units],
@@ -113,19 +117,19 @@ class Dense extends Layer
     }
 
     /**
-     * @param Variable $inputs
+     * @param Tensor $inputs
      * @param bool $training
-     * @return Variable
+     * @return Tensor
      * @throws ValueErrorException
      */
-    public function __invoke(Variable $inputs, bool $training = false): Variable
+    public function __invoke(Tensor $inputs, bool $training = false): Tensor
     {
         if (!$this->built()) {
             $this->build($inputs->shape());
         }
-        $outputs = Variable::dot($inputs, $this->kernel);
+        $outputs = Tensor::dot($inputs, $this->kernel);
         if ($this->useBias) {
-            $outputs = Variable::add($outputs, $this->bias);
+            $outputs = Tensor::add($outputs, $this->bias);
         }
         if ($this->activation) {
             $outputs = ($this->activation)($outputs);
@@ -139,8 +143,9 @@ class Dense extends Layer
     public function generateOutputShape(): array
     {
         $shape = $this->getInputShape();
+        assert (count($shape) == 2);
         array_pop($shape);
-        $shape[] = $this->units;
+        $shape = [$this->getInputShape()[0], $this->units];
         return $shape;
     }
 }

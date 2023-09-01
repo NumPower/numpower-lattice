@@ -2,16 +2,16 @@
 
 namespace NumPower\Lattice\Core\Layers;
 
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 
 interface ILayer
 {
     /**
-     * @param Variable $inputs
+     * @param Tensor $inputs
      * @param bool $training
-     * @return Variable
+     * @return Tensor
      */
-    public function __invoke(Variable $inputs, bool $training = false): Variable;
+    public function __invoke(Tensor $inputs, bool $training = false): Tensor;
 
     /**
      * @param int[] $inputShape
@@ -60,7 +60,18 @@ interface ILayer
     public function countNonTrainableParams(): int;
 
     /**
-     * @return Variable[]
+     * @return Tensor[]
      */
     public function getTrainableWeights(): array;
+
+    /**
+     * @param int $batchSize
+     * @return void
+     */
+    public function setBatchSize(int $batchSize);
+
+    /**
+     * @return int
+     */
+    public function getBatchSize(): int;
 }

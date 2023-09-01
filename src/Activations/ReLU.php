@@ -5,19 +5,19 @@ namespace NumPower\Lattice\Activations;
 use Exception;
 use NDArray as nd;
 use NumPower\Lattice\Core\Activations\Activation;
+use NumPower\Lattice\Core\IGrad;
 use NumPower\Lattice\Core\Operation;
-use NumPower\Lattice\Core\Variable;
-use NumPower\Lattice\IGrad;
+use NumPower\Lattice\Core\Tensor;
 
 class ReLU extends Activation implements IGrad
 {
     /**
-     * @param Variable $inputs
-     * @return Variable
+     * @param Tensor $inputs
+     * @return Tensor
      */
-    public function __invoke(Variable $inputs): Variable
+    public function __invoke(Tensor $inputs): Tensor
     {
-        $new_var = Variable::fromArray(nd::maximum($inputs->getArray(), 0));
+        $new_var = Tensor::fromArray(nd::maximum($inputs->getArray(), 0));
         $new_var->setInputs([$inputs, 0]);
         $new_var->registerOperation("relu", $this);
         return $new_var;

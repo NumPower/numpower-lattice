@@ -5,7 +5,7 @@ namespace NumPower\Lattice\Layers;
 use NDArray;
 use NDArray as nd;
 use NumPower\Lattice\Core\Layers\Layer;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Exceptions\ValueErrorException;
 
 class Dropout extends Layer
@@ -22,7 +22,7 @@ class Dropout extends Layer
     public function __construct(float $rate)
     {
         $this->setDropoutRate($rate);
-        parent::__construct('dropout_' . substr(uniqid(), -4));
+        parent::__construct('dropout_' . substr(uniqid(), -4), true);
     }
 
     /**
@@ -49,21 +49,21 @@ class Dropout extends Layer
     }
 
     /**
-     * @param Variable $inputs
+     * @param Tensor $inputs
      * @param bool $training
-     * @return Variable
+     * @return Tensor
      */
-    public function __invoke(Variable $inputs, bool $training = true): Variable
+    public function __invoke(Tensor $inputs, bool $training = true): Tensor
     {
         if (!$this->built()) {
             $this->build($inputs->getShape());
         }
         if ($training) {
-            $mask = nd::random_binominal($inputs->getShape(), 1, 1 - $this->rate);
+            $mask = nd::random_binomial($inputs->getShape(), 1, 1 - $this->rate);
         } else {
             return $inputs;
         }
-        return Variable::multiply($inputs, Variable::divide(Variable::fromArray($mask), (1 - $this->rate)));
+        return Tensor::multiply($inputs, Tensor::divide(Tensor::fromArray($mask), (1 - $this->rate)));
     }
 
     /**

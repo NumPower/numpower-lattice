@@ -3,18 +3,18 @@
 namespace NumPower\Lattice\Activations;
 
 use NumPower\Lattice\Core\Activations\IActivation;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Exceptions\ValueErrorException;
 
 class Exp implements IActivation
 {
     /**
-     * @param Variable $inputs
-     * @return Variable
+     * @param Tensor $inputs
+     * @return Tensor
      * @throws ValueErrorException
      */
-    public function __invoke(Variable $inputs): Variable
+    public function __invoke(Tensor $inputs): Tensor
     {
-        return Variable::exp($inputs);
+        return Tensor::exp($inputs);
     }
 }

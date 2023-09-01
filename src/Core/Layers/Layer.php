@@ -5,7 +5,7 @@ namespace NumPower\Lattice\Core\Layers;
 use NDArray as nd;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Regularizers\IRegularizer;
-use NumPower\Lattice\Core\Variable;
+use NumPower\Lattice\Core\Tensor;
 use NumPower\Lattice\Exceptions\ValueErrorException;
 use NumPower\Lattice\Initializers\GlorotNormal;
 use NumPower\Lattice\Utils\LayerUtils;
@@ -18,22 +18,17 @@ class Layer implements ILayer
     protected bool $built;
 
     /**
-     * @var int[]
-     */
-    protected array $inputShape;
-
-    /**
      * @var bool
      */
     protected bool $trainable;
 
     /**
-     * @var Variable[]
+     * @var Tensor[]
      */
     private array $trainableWeights = [];
 
     /**
-     * @var Variable[]
+     * @var Tensor[]
      */
     private array $nonTrainableWeights = [];
 
@@ -41,6 +36,20 @@ class Layer implements ILayer
      * @var ?string
      */
     private ?string $name;
+
+    /**
+     * @var bool
+     */
+    private bool $supportMasking;
+
+    /**
+     */
+    private InputSpec $inputSpec;
+
+    /**
+     * @var int
+     */
+    private int $batchSize;
 
     /**
      * @param string $name
@@ -59,11 +68,30 @@ class Layer implements ILayer
      */
     public function setInputShape(array $shape): void
     {
-        $this->inputShape = $shape;
+        $this->inputSpec = new InputSpec(
+            shape: $shape
+        );
     }
 
     /**
-     * @return Variable[]
+     * @param bool $value
+     * @return void
+     */
+    protected function setSupportMasking(bool $value): void
+    {
+        $this->supportMasking = $value;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function getSupportMasking(): bool
+    {
+        return $this->supportMasking;
+    }
+
+    /**
+     * @return Tensor[]
      */
     public function getTrainableWeights(): array
     {
@@ -156,7 +184,7 @@ class Layer implements ILayer
      * @param IInitializer|null $initializer
      * @param IRegularizer|null $regularizer
      * @param bool|null $trainable
-     * @return Variable
+     * @return Tensor
      */
     public function addWeight(
         ?string       $name = null,
@@ -164,12 +192,13 @@ class Layer implements ILayer
         ?IInitializer $initializer = null,
         ?IRegularizer $regularizer = null,
         ?bool         $trainable = null
-    ): Variable {
+    ): Tensor
+    {
         $trainable == null || ($this->trainable = true);
         if ($initializer == null) {
             $initializer = new GlorotNormal();
         }
-        $variable = new Variable(
+        $variable = new Tensor(
             name: $name,
             shape: $shape,
             initializer: $initializer,
@@ -188,19 +217,53 @@ class Layer implements ILayer
     }
 
     /**
+     * @return InputSpec
+     */
+    public function getInputSpec(): InputSpec
+    {
+        return $this->inputSpec;
+    }
+
+    /**
+     * @param InputSpec $spec
+     * @return void
+     */
+    public function setInputSpec(InputSpec $spec): void
+    {
+        $this->inputSpec = $spec;
+    }
+
+    /**
+     * @param int $batchSize
+     * @return void
+     */
+    public function setBatchSize(int $batchSize): void
+    {
+        $this->batchSize = $batchSize;
+    }
+
+    /**
+     * @return int
+     */
+    public function getBatchSize(): int
+    {
+        return $this->batchSize;
+    }
+
+    /**
      * @return int[]
      */
     public function getInputShape(): array
     {
-        return $this->inputShape;
+        return $this->inputSpec->getShape();
     }
 
     /**
-     * @param Variable $inputs
+     * @param Tensor $inputs
      * @param bool $training
-     * @return Variable
+     * @return Tensor
      */
-    public function __invoke(Variable $inputs, bool $training = false): Variable
+    public function __invoke(Tensor $inputs, bool $training = false): Tensor
     {
         return $inputs;
     }
@@ -215,10 +278,10 @@ class Layer implements ILayer
     }
 
     /**
-     * @return int[]
+     * @return array
      */
     public function generateOutputShape(): array
     {
-        return $this->inputShape;
+        return $this->inputSpec->getShape();
     }
 }
