@@ -6,6 +6,7 @@ use \NDArray as nd;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Regularizers\IRegularizer;
 use NumPower\Lattice\Exceptions\ValueErrorException;
+use NumPower\Lattice\IGrad;
 
 class Variable
 {
@@ -106,9 +107,9 @@ class Variable
      * @param string $name
      * @return Operation
      */
-    public function registerOperation(string $name): Operation
+    public function registerOperation(string $name, ?IGrad $callable = NULL): Operation
     {
-        $op = new Operation($name, $this->inputs);
+        $op = new Operation($name, $this->inputs, $callable);
         $this->tape = $op;
         return $op;
     }
@@ -154,6 +155,25 @@ class Variable
         $new_var = Variable::fromArray(nd::dot($a->getArray(), $b->getArray()));
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("dot");
+        return $new_var;
+    }
+
+    /**
+     * @param Variable|int|float $a
+     * @param int|float|Variable $b
+     * @return Variable
+     */
+    public static function maximum(Variable|int|float $a, Variable|int|float $b): Variable
+    {
+        if (is_int($a) || is_float($a)) {
+            $a = Variable::fromArray($a);
+        }
+        if (is_int($b) || is_float($b)) {
+            $b = Variable::fromArray($b);
+        }
+        $new_var = Variable::fromArray(nd::maximum($a->getArray(), $b->getArray()));
+        $new_var->setInputs([$a, $b]);
+        $new_var->registerOperation("maximum");
         return $new_var;
     }
 

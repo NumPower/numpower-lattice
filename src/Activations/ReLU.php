@@ -6,30 +6,30 @@ use \NDArray as nd;
 use NumPower\Lattice\Core\Activations\Activation;
 use NumPower\Lattice\Core\Operation;
 use NumPower\Lattice\Core\Variable;
-use NumPower\Lattice\Exceptions\ValueErrorException;
 use NumPower\Lattice\IGrad;
 
-class Softmax extends Activation implements IGrad
+class ReLU extends Activation implements IGrad
 {
     /**
      * @param Variable $inputs
      * @return Variable
-     * @throws ValueErrorException
      */
     function __invoke(Variable $inputs): Variable
     {
-        $exps = Variable::exp($inputs);
-        $sum_exps = Variable::sum_axis($exps, 1, true);
-        return Variable::divide($exps, $sum_exps);
+        $new_var = Variable::fromArray(nd::maximum($inputs->getArray(), 0));
+        $new_var->setInputs([$inputs, 0]);
+        $new_var->registerOperation("relu", $this);
+        return $new_var;
     }
 
     /**
      * @param $grad
      * @param Operation $op
      * @return void
+     * @throws \Exception
      */
     public function backward($grad, Operation $op): void
     {
-        // TODO: Implement backward() method.
+        $op->getArgs()[0]->backward($grad * (nd::greater($op->getArgs()[0]->getArray(), 0)));
     }
 }

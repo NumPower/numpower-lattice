@@ -3,6 +3,7 @@
 namespace NumPower\Lattice\Core;
 
 use \NDArray as nd;
+use NumPower\Lattice\IGrad;
 
 class Operation
 {
@@ -21,9 +22,20 @@ class Operation
      */
     private ?Operation $next;
 
-    public function __construct(string $name, array $args) {
+    /**
+     * @var IGrad|null
+     */
+    private ?IGrad $backwardFunction;
+
+    /**
+     * @param string $name
+     * @param array $args
+     * @param IGrad|null $backwardFunction
+     */
+    public function __construct(string $name, array $args, ?IGrad $backwardFunction = NULL) {
         $this->setName($name);
         $this->setArgs($args);
+        $this->setBackwardFunction($backwardFunction);
     }
 
     /**
@@ -118,6 +130,10 @@ class Operation
             case 'abs':
                 $this->getArgs()[0]->backward($grad * nd::sign($this->getArgs()[0]->getArray()));
                 break;
+            case 'maximum':
+                $this->getArgs()[0]->backward($grad * (nd::greater_equal($this->getArgs()[0]->getArray(), $this->getArgs()[1]->getArray())));
+                $this->getArgs()[1]->backward($grad * (nd::less_equal($this->getArgs()[0]->getArray(), $this->getArgs()[1]->getArray())));
+                break;
             case 'mean':
                 $this->getArgs()[0]->backward((nd::ones($this->getArgs()[0]->getArray()->shape()) * $grad) / nd::prod(nd::array($this->args[0]->getArray()->shape())));
                 break;
@@ -138,7 +154,11 @@ class Operation
                 }
                 break;
             default:
-                throw new \Exception("Back propagation fatal error.");
+                if (!isset($this->backwardFunction)) {
+                    throw new \Exception("Back propagation fatal error.");
+                } else {
+                    $this->backwardFunction->backward($grad, $this);
+                }
         }
     }
 
@@ -151,5 +171,14 @@ class Operation
             return $this->next;
         }
         return NULL;
+    }
+
+    /**
+     * @param IGrad|null $backwardFunction
+     * @return void
+     */
+    private function setBackwardFunction(?IGrad $backwardFunction)
+    {
+        $this->backwardFunction = $backwardFunction;
     }
 }
