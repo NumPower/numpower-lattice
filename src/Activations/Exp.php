@@ -13,7 +13,7 @@ class Exp implements IActivation
      * @return Variable
      * @throws ValueErrorException
      */
-    function __invoke(Variable $inputs): Variable
+    public function __invoke(Variable $inputs): Variable
     {
         return Variable::exp($inputs);
     }

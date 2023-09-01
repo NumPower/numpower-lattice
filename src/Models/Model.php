@@ -2,7 +2,7 @@
 
 namespace NumPower\Lattice\Models;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Layers\ILayer;
 use NumPower\Lattice\Core\Layers\Layer;
 use NumPower\Lattice\Core\Losses\ILoss;
@@ -16,9 +16,9 @@ use NumPower\Lattice\Utils\LayerUtils;
 class Model extends Layer implements IModel
 {
     /**
-     * @var int
+     * @var bool
      */
-    protected int $isCompiled;
+    protected bool $isCompiled;
 
     /**
      * @var ILayer[]
@@ -42,11 +42,12 @@ class Model extends Layer implements IModel
      */
     private ?ILoss $lossFunction;
 
-    public function __construct(?string $name = NULL) {
+    public function __construct(?string $name = null)
+    {
         $this->layers = [];
         $this->epochPrinter = new EpochPrinter();
         $this->isCompiled = false;
-        ($name == NULL) ? $this->setName("model_". substr(uniqid(), -4)) : $this->setName($name);
+        ($name == null) ? $this->setName("model_" . substr(uniqid(), -4)) : $this->setName($name);
     }
 
     /**
@@ -63,7 +64,8 @@ class Model extends Layer implements IModel
      * @param array|null $metrics
      * @return void
      */
-    public function compile(IOptimizer $optimizer, ?ILoss $loss = NULL, ?array $metrics = NULL): void {
+    public function compile(IOptimizer $optimizer, ?ILoss $loss = null, ?array $metrics = null): void
+    {
         $layers = $this->getLayers();
         $this->setOptimizer($optimizer);
         foreach ($this->getLayers() as $idx => $layer) {
@@ -71,7 +73,7 @@ class Model extends Layer implements IModel
                 $layer->build([]);
                 continue;
             }
-            $layer->build($layers[$idx-1]->generateOutputShape());
+            $layer->build($layers[$idx - 1]->generateOutputShape());
         }
         if ($loss) {
             $this->setLossFunction($loss);
@@ -83,42 +85,46 @@ class Model extends Layer implements IModel
     /**
      * @return void
      */
-    public function metrics(): void {
-
+    public function metrics(): void
+    {
     }
 
     /**
      * @param nd $y
      * @param Variable $outputs
-     * @return float
+     * @return Variable
      */
-    public function computeLoss(\NDArray $y, Variable $outputs): Variable {
+    public function computeLoss(nd $y, Variable $outputs): Variable
+    {
         return $this->getLossFunction()($y, $outputs);
     }
 
     /**
-     * @param \NDArray $x
-     * @param \NDArray $y
-     * @return array
+     * @param nd $x
+     * @param nd $y
+     * @return mixed[]
      */
-    public function trainStep(\NDArray $x, \NDArray $y): array {
+    public function trainStep(nd $x, nd $y): array
+    {
         $x_var = Variable::fromArray($x, name: "x");
         $outputs = $x_var;
         foreach ($this->getLayers() as $layer) {
-            $outputs = $layer($outputs, training: True);
+            $outputs = $layer($outputs, training: true);
         }
         if (isset($this->lossFunction)) {
             $loss = $this->computeLoss($y, $outputs);
+            $this->getOptimizer()($loss, $this);
+            return array($this->computeMetrics(), $loss, $outputs);
         }
-        $this->getOptimizer()($loss, $this);
-        return [$this->computeMetrics(), $loss, $outputs];
+        return array($this->computeMetrics(), $outputs);
     }
 
     /**
      * @param IOptimizer $optimizer
      * @return void
      */
-    public function setOptimizer(IOptimizer $optimizer): void {
+    public function setOptimizer(IOptimizer $optimizer): void
+    {
         $this->optimizer = $optimizer;
     }
 
@@ -148,22 +154,27 @@ class Model extends Layer implements IModel
     }
 
     /**
-     * @param \NDArray $x
-     * @param \NDArray $y
+     * @param nd $x
+     * @param nd $y
      * @param int|null $batchSize
      * @param int $epochs
      * @param float|null $validationSplit
-     * @param array|null $validationData
+     * @param nd[]|null $validationData
      * @param bool|null $shuffle
-     * @param callable|null $epochCallback
+     * @param string|null $epochCallback
      * @return void
      */
-    public function fit(\NDArray $x, \NDArray $y, ?int $batchSize = 8,
-                        int $epochs = 1, ?float $validationSplit = 0.0,
-                        ?array $validationData = NULL, ?bool $shuffle = True,
-                        ?string $epochCallback = NULL): void
-    {
-        $left = False;
+    public function fit(
+        nd      $x,
+        nd      $y,
+        ?int    $batchSize = 8,
+        int     $epochs = 1,
+        ?float  $validationSplit = 0.0,
+        ?array  $validationData = null,
+        ?bool   $shuffle = true,
+        ?string $epochCallback = null
+    ): void {
+        $left = false;
         $total_batches = intdiv(count($x), $batchSize);
         if (count($x) % $batchSize != 0) {
             $left = count($x) % $batchSize;
@@ -175,8 +186,10 @@ class Model extends Layer implements IModel
             for ($i_batch = 0; $i_batch < $total_batches; $i_batch++) {
                 if ($i_batch == $total_batches - 1 && $left) {
                     $epoch_update_printer = count($x);
-                    $current_batch_x = $x->slice([($i_batch * $batchSize) - ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
-                    $current_batch_y = $y->slice([($i_batch * $batchSize) - ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
+                    $current_batch_x = $x->slice([($i_batch * $batchSize) -
+                        ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
+                    $current_batch_y = $y->slice([($i_batch * $batchSize) -
+                        ($batchSize - $left), ($i_batch * $batchSize) + $batchSize]);
                 } else {
                     $epoch_update_printer = $batchSize * ($i_batch + 1);
                     $current_batch_x = $x->slice([$i_batch * $batchSize, ($i_batch * $batchSize) + $batchSize]);
@@ -194,21 +207,21 @@ class Model extends Layer implements IModel
             }
             $this->epochPrinter->stop();
             if (isset($epochCallback)) {
-                call_user_func($epochCallback, $i, $this, $metrics, ($sum_loss/count($x)), $outputs);
+                call_user_func($epochCallback, $i, $this, $metrics, ($sum_loss / count($x)), $outputs);
             }
         }
     }
 
     /**
-     * @param $x
-     * @return array
+     * @param nd $x
+     * @return nd
      */
-    public function predict($x)
+    public function predict(nd $x): nd
     {
         $x_var = Variable::fromArray($x, name: "x");
         $outputs = $x_var;
         foreach ($this->getLayers() as $layer) {
-            $outputs = $layer($outputs, training: False);
+            $outputs = $layer($outputs);
         }
         return $outputs->getArray();
     }
@@ -222,7 +235,7 @@ class Model extends Layer implements IModel
     }
 
     /**
-     * @return array
+     * @return mixed[]
      */
     private function computeMetrics(): array
     {

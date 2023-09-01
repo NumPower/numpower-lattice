@@ -11,7 +11,8 @@ class DataUtils
      * @param float $epsilon
      * @return \NDArray
      */
-    public static function quickNormalize(\NDArray $x, float $epsilon = 1e-8): \NDArray {
+    public static function quickNormalize(\NDArray $x, float $epsilon = 1e-8): \NDArray
+    {
         $t = nd::transpose($x);
 
         $mean = nd::zeros([count($t), 1]);
@@ -34,7 +35,7 @@ class DataUtils
      * @param float $validationSplit
      * @return array
      */
-    public static function shuffleAndPartition(\NDArray $x, \NDArray $y,  int $batchSize, float $validationSplit = 0.0): array
+    public static function shuffleAndPartition(\NDArray $x, \NDArray $y, int $batchSize, float $validationSplit = 0.0): array
     {
         $rtn_payload = [
             "total_batches" => 0,
@@ -51,7 +52,7 @@ class DataUtils
         }
 
         $rest = count($x) % $batchSize;
-        $rtn_payload["total_batches"] = (int)(count($x)/$batchSize);
+        $rtn_payload["total_batches"] = (int)(count($x) / $batchSize);
         if ($rest) {
             $rtn_payload["total_batches"] += 1;
         }

@@ -2,7 +2,7 @@
 
 namespace NumPower\Lattice\Layers;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Activations\IActivation;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Layers\Layer;
@@ -66,14 +66,16 @@ class Dense extends Layer
      * @param IRegularizer|null $kernelRegularizer
      * @param IRegularizer|null $biasRegularizer
      */
-    public function __construct(int $units,
-                                ?IActivation $activation = NULL,
-                                bool $useBias = True,
-                                ?IInitializer $kernelInitializer = NULL,
-                                ?IInitializer $biasInitializer = NULL,
-                                ?IRegularizer $kernelRegularizer = NULL,
-                                ?IRegularizer $biasRegularizer = NULL
+    public function __construct(
+        int           $units,
+        ?IActivation  $activation = null,
+        bool          $useBias = true,
+        ?IInitializer $kernelInitializer = null,
+        ?IInitializer $biasInitializer = null,
+        ?IRegularizer $kernelRegularizer = null,
+        ?IRegularizer $biasRegularizer = null
     ) {
+        parent::__construct("dense_" . substr(uniqid(), -4), true);
         $this->units = $units;
         $this->activation = $activation;
         $this->useBias = $useBias;
@@ -81,15 +83,14 @@ class Dense extends Layer
         $this->biasInitializer = $biasInitializer;
         $this->kernelRegularizer = $kernelRegularizer;
         $this->biasRegularizer = $biasRegularizer;
-        $this->setName("dense_" . substr(uniqid(), -4));
-        $this->built = false;
-        $this->trainable = true;
     }
 
     /**
+     * @param array $inputShape
      * @return void
      */
-    public function build(array $inputShape) {
+    public function build(array $inputShape): void
+    {
         $this->setInputShape($inputShape);
         $last_dim = $inputShape[count($inputShape) - 1];
         $this->kernel = $this->addWeight(
@@ -97,7 +98,7 @@ class Dense extends Layer
             shape: [$last_dim, $this->units],
             initializer: $this->kernelInitializer,
             regularizer: $this->kernelRegularizer,
-            trainable: True
+            trainable: true
         );
         if ($this->useBias) {
             $this->bias = $this->addWeight(
@@ -105,7 +106,7 @@ class Dense extends Layer
                 shape: [$this->units],
                 initializer: $this->biasInitializer,
                 regularizer: $this->biasRegularizer,
-                trainable: True
+                trainable: true
             );
         }
         $this->setBuilt(true);
@@ -117,7 +118,8 @@ class Dense extends Layer
      * @return Variable
      * @throws ValueErrorException
      */
-    public function __invoke(Variable $inputs, bool $training = False): Variable {
+    public function __invoke(Variable $inputs, bool $training = false): Variable
+    {
         if (!$this->built()) {
             $this->build($inputs->shape());
         }
@@ -134,7 +136,8 @@ class Dense extends Layer
     /**
      * @return array
      */
-    public function generateOutputShape(): array {
+    public function generateOutputShape(): array
+    {
         $shape = $this->getInputShape();
         array_pop($shape);
         $shape[] = $this->units;

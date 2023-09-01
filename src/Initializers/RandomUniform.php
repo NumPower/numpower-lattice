@@ -2,7 +2,7 @@
 
 namespace NumPower\Lattice\Initializers;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 
 class RandomUniform implements IInitializer
@@ -21,17 +21,18 @@ class RandomUniform implements IInitializer
      * @param float $min
      * @param float $max
      */
-    public function __construct(float $min = 0.0, float $max = 1.0) {
+    public function __construct(float $min = 0.0, float $max = 1.0)
+    {
         $this->min = $min;
         $this->max = $max;
     }
 
     /**
-     * @param array $shape
+     * @param int[] $shape
      * @param bool $use_gpu
      * @return nd
      */
-    function __invoke(array $shape, bool $use_gpu = false): \NDArray
+    public function __invoke(array $shape, bool $use_gpu = false): nd
     {
         $a = nd::uniform($shape, low: $this->min, high: $this->max);
         if ($use_gpu) {

@@ -69,14 +69,13 @@ class Variable
      * @param bool $requireGrad
      */
     public function __construct(
-        string $name,
-        array $shape,
-        ?IInitializer $initializer = NULL,
-        ?bool $trainable = False,
-        ?IRegularizer $regularizer = NULL,
-        bool $requireGrad = True
-    )
-    {
+        string        $name,
+        array         $shape,
+        ?IInitializer $initializer = null,
+        ?bool         $trainable = false,
+        ?IRegularizer $regularizer = null,
+        bool          $requireGrad = true
+    ) {
         $this->requireGrad = $requireGrad;
         $this->name = $name;
         $this->shape = $shape;
@@ -97,8 +96,9 @@ class Variable
     /**
      * @return void
      */
-    private function initialize() {
-        if ($this->initializer != NULL) {
+    private function initialize()
+    {
+        if ($this->initializer != null) {
             $this->array = ($this->initializer)($this->shape());
         }
     }
@@ -107,7 +107,7 @@ class Variable
      * @param string $name
      * @return Operation
      */
-    public function registerOperation(string $name, ?IGrad $callable = NULL): Operation
+    public function registerOperation(string $name, ?IGrad $callable = null): Operation
     {
         $op = new Operation($name, $this->inputs, $callable);
         $this->tape = $op;
@@ -120,7 +120,8 @@ class Variable
      * @param bool $requireGrad
      * @return Variable
      */
-    public static function fromArray(\NDArray|float $array, string $name = "", bool $requireGrad = False): Variable {
+    public static function fromArray(\NDArray|float $array, string $name = "", bool $requireGrad = false): Variable
+    {
         if (is_float($array)) {
             $variable = new Variable(
                 name: $name,
@@ -195,7 +196,7 @@ class Variable
         if (is_int($b) || is_float($b)) {
             $b = Variable::fromArray($b);
         }
-        $new_var = Variable::fromArray( $a->getArray() / $b->getArray());
+        $new_var = Variable::fromArray($a->getArray() / $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("divide");
         return $new_var;
@@ -205,7 +206,8 @@ class Variable
      * @param Variable $a
      * @return Variable
      */
-    public static function abs(Variable $a): Variable {
+    public static function abs(Variable $a): Variable
+    {
         $new_var = Variable::fromArray(nd::abs($a->getArray()));
         $new_var->setInputs([$a]);
         $new_var->registerOperation("abs");
@@ -219,7 +221,7 @@ class Variable
      */
     public static function power(Variable $a, Variable $b): Variable
     {
-        $new_var = Variable::fromArray( $a->getArray() ** $b->getArray());
+        $new_var = Variable::fromArray($a->getArray() ** $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("power");
         return $new_var;
@@ -239,7 +241,7 @@ class Variable
      * @param bool $keepdim
      * @return Variable
      */
-    public static function sum_axis(Variable $a, int $axis, bool $keepdim = False): Variable
+    public static function sum_axis(Variable $a, int $axis, bool $keepdim = false): Variable
     {
         $value = nd::sum($a->getArray(), $axis);
         if ($keepdim) {
@@ -261,7 +263,7 @@ class Variable
      * @param bool $keepdim
      * @return Variable
      */
-    public static function sum(Variable $a, bool $keepdim = False): Variable
+    public static function sum(Variable $a, bool $keepdim = false): Variable
     {
         $value = nd::sum($a->getArray());
         if ($keepdim) {
@@ -322,7 +324,7 @@ class Variable
      */
     public static function subtract(Variable $a, Variable $b): Variable
     {
-        $new_var = Variable::fromArray( $a->getArray() - $b->getArray());
+        $new_var = Variable::fromArray($a->getArray() - $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation("subtract");
         return $new_var;
@@ -380,7 +382,8 @@ class Variable
      * @param Variable $b
      * @return Variable
      */
-    public static function multiply(Variable $a, Variable $b): Variable {
+    public static function multiply(Variable $a, Variable $b): Variable
+    {
         $new_var = Variable::fromArray($a->getArray() * $b->getArray());
         $new_var->setInputs([$a, $b]);
         $new_var->registerOperation('multiply');
@@ -392,8 +395,8 @@ class Variable
      */
     public function getOperation(): ?Operation
     {
-        if (!isset($this->tape)){
-            return NULL;
+        if (!isset($this->tape)) {
+            return null;
         }
         return $this->tape;
     }
@@ -409,7 +412,8 @@ class Variable
     /**
      * @return nd
      */
-    public function diff(): \NDArray {
+    public function diff(): \NDArray
+    {
         return $this->grad;
     }
 
@@ -446,7 +450,7 @@ class Variable
      * @return void
      * @throws \Exception
      */
-    public function backward(\NDArray|float|int $grad = NULL)
+    public function backward(\NDArray|float|int $grad = null)
     {
         if (!isset($grad)) {
             if (!is_float($this->getArray()) && !is_int($this->getArray())) {
@@ -463,7 +467,7 @@ class Variable
                 $this->grad += $grad;
             }
 
-            if ($this->getOperation() != NULL) {
+            if ($this->getOperation() != null) {
                 $this->getOperation()->backward($grad);
             }
         }

@@ -2,7 +2,8 @@
 
 namespace NumPower\Lattice\Optimizers;
 
-use \NDArray as nd;
+use Exception;
+use NDArray as nd;
 use NumPower\Lattice\Core\Models\IModel;
 use NumPower\Lattice\Core\Optimizers\Optimizer;
 use NumPower\Lattice\Core\Variable;
@@ -36,16 +37,17 @@ class Adam extends Optimizer
     private int $t;
 
     /**
-     * @var \NDArray[]
+     * @var nd[]
      */
     private array $m;
 
     /**
-     * @var \NDArray[]
+     * @var nd[]
      */
     private array $v;
 
-    public function __construct(float $lr=0.001, float $beta1=0.9, float $beta2=0.999, float $epsilon=1e-7) {
+    public function __construct(float $lr = 0.001, float $beta1 = 0.9, float $beta2 = 0.999, float $epsilon = 1e-7)
+    {
         $this->learningRate = $lr;
         $this->beta1 = $beta1;
         $this->beta2 = $beta2;
@@ -56,7 +58,8 @@ class Adam extends Optimizer
      * @param IModel $model
      * @return void
      */
-    public function build(IModel $model): void {
+    public function build(IModel $model): void
+    {
         $this->m = [];
         $this->v = [];
         foreach ($model->getLayers() as $idx => $layer) {
@@ -75,9 +78,9 @@ class Adam extends Optimizer
      * @param Variable $error
      * @param Model $model
      * @return void
-     * @throws \Exception
+     * @throws Exception
      */
-    function __invoke(Variable $error, Model $model): void
+    public function __invoke(Variable $error, Model $model): void
     {
         $error->backward();
         $this->t += 1;

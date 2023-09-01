@@ -12,14 +12,15 @@ class Input extends Layer
     public ?int $batchSize;
 
     /**
-     * @param array $shape
-     * @param ?int $batchSize
-     * @param ?string|null $name
+     * @param int[] $shape
+     * @param int|null $batchSize
+     * @param string|null $name
      */
-    public function __construct(array $shape, ?int $batchSize = NULL, ?string $name = NULL) {
+    public function __construct(array $shape, ?int $batchSize = null, ?string $name = null)
+    {
         $this->inputShape = $shape;
         $this->batchSize = $batchSize;
-        ($name) ? $this->setName($name) : $this->setName("input_". substr(uniqid(), -4));
+        ($name) ? $this->setName($name) : $this->setName("input_" . substr(uniqid(), -4));
         $this->trainable = false;
         $this->built = false;
     }

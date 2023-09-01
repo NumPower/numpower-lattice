@@ -2,7 +2,8 @@
 
 namespace NumPower\Lattice\Activations;
 
-use \NDArray as nd;
+use Exception;
+use NDArray as nd;
 use NumPower\Lattice\Core\Activations\Activation;
 use NumPower\Lattice\Core\Operation;
 use NumPower\Lattice\Core\Variable;
@@ -14,7 +15,7 @@ class ReLU extends Activation implements IGrad
      * @param Variable $inputs
      * @return Variable
      */
-    function __invoke(Variable $inputs): Variable
+    public function __invoke(Variable $inputs): Variable
     {
         $new_var = Variable::fromArray(nd::maximum($inputs->getArray(), 0));
         $new_var->setInputs([$inputs, 0]);
@@ -26,7 +27,7 @@ class ReLU extends Activation implements IGrad
      * @param $grad
      * @param Operation $op
      * @return void
-     * @throws \Exception
+     * @throws Exception
      */
     public function backward($grad, Operation $op): void
     {

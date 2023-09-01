@@ -21,7 +21,8 @@ class RandomNormal extends Initializer
      * @param float $loc
      * @param float $scale
      */
-    public function __construct(float $loc = 0, float $scale = 0.05) {
+    public function __construct(float $loc = 0, float $scale = 0.05)
+    {
         $this->loc = $loc;
         $this->scale = $scale;
     }

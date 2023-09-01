@@ -2,7 +2,7 @@
 
 namespace NumPower\Lattice\Activations;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Activations\IActivation;
 use NumPower\Lattice\Core\Variable;
 use NumPower\Lattice\Exceptions\ValueErrorException;
@@ -18,10 +18,11 @@ class Sigmoid implements IActivation
      * @return Variable
      * @throws ValueErrorException
      */
-    public function __invoke(Variable $inputs): Variable {
+    public function __invoke(Variable $inputs): Variable
+    {
         $minus_ones = Variable::fromArray(-1);
         $ones = Variable::fromArray(1);
-        $rtn = Variable::divide(
+        return Variable::divide(
             $ones,
             Variable::add(
                 Variable::exp(
@@ -30,6 +31,5 @@ class Sigmoid implements IActivation
                 $ones
             )
         );
-        return $rtn;
     }
 }

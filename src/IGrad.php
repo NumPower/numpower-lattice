@@ -2,9 +2,15 @@
 
 namespace NumPower\Lattice;
 
+use NDArray as nd;
 use NumPower\Lattice\Core\Operation;
 
 interface IGrad
 {
-    public function backward(\NDArray|int|float $grad, Operation $op): void;
+    /**
+     * @param nd|int|float $grad
+     * @param Operation $op
+     * @return void
+     */
+    public function backward(nd|int|float $grad, Operation $op): void;
 }

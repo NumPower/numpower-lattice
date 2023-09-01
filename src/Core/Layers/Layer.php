@@ -2,13 +2,12 @@
 
 namespace NumPower\Lattice\Core\Layers;
 
+use NDArray as nd;
 use NumPower\Lattice\Core\Initializers\IInitializer;
 use NumPower\Lattice\Core\Regularizers\IRegularizer;
 use NumPower\Lattice\Core\Variable;
 use NumPower\Lattice\Exceptions\ValueErrorException;
 use NumPower\Lattice\Initializers\GlorotNormal;
-use NumPower\Lattice\Initializers\RandomNormal;
-use NumPower\Lattice\Initializers\RandomUniform;
 use NumPower\Lattice\Utils\LayerUtils;
 
 class Layer implements ILayer
@@ -19,7 +18,7 @@ class Layer implements ILayer
     protected bool $built;
 
     /**
-     * @var array
+     * @var int[]
      */
     protected array $inputShape;
 
@@ -29,12 +28,12 @@ class Layer implements ILayer
     protected bool $trainable;
 
     /**
-     * @var array
+     * @var Variable[]
      */
     private array $trainableWeights = [];
 
     /**
-     * @var array
+     * @var Variable[]
      */
     private array $nonTrainableWeights = [];
 
@@ -47,22 +46,24 @@ class Layer implements ILayer
      * @param string $name
      * @param bool $trainable
      */
-    public function __construct(string $name, bool $trainable = False) {
-        $this->built = False;
+    public function __construct(string $name, bool $trainable = false)
+    {
+        $this->built = false;
         $this->trainable = $trainable;
         $this->setName($name);
     }
 
     /**
-     * @param array $shape
+     * @param int[] $shape
      * @return void
      */
-    public function setInputShape(array $shape): void {
+    public function setInputShape(array $shape): void
+    {
         $this->inputShape = $shape;
     }
 
     /**
-     * @return array
+     * @return Variable[]
      */
     public function getTrainableWeights(): array
     {
@@ -71,16 +72,18 @@ class Layer implements ILayer
 
     /**
      * @param bool $built
-     * @return bool
+     * @return void
      */
-    public function setBuilt(bool $built) {
-        return $this->built = $built;
+    public function setBuilt(bool $built): void
+    {
+        $this->built = $built;
     }
 
     /**
      * @return bool
      */
-    public function built(): bool {
+    public function built(): bool
+    {
         return $this->built;
     }
 
@@ -149,21 +152,21 @@ class Layer implements ILayer
      * Add a variable to the layer
      *
      * @param string|null $name
-     * @param array|null $shape
+     * @param int[]|null $shape
      * @param IInitializer|null $initializer
      * @param IRegularizer|null $regularizer
      * @param bool|null $trainable
      * @return Variable
      */
     public function addWeight(
-        ?string $name = NULL,
-        ?array $shape = NULL,
-        ?IInitializer $initializer = NULL,
-        ?IRegularizer $regularizer = NULL,
-        ?bool $trainable = NULL
+        ?string       $name = null,
+        ?array        $shape = null,
+        ?IInitializer $initializer = null,
+        ?IRegularizer $regularizer = null,
+        ?bool         $trainable = null
     ): Variable {
-        $trainable == NULL || ($this->trainable = True);
-        if ($initializer == NULL) {
+        $trainable == null || ($this->trainable = true);
+        if ($initializer == null) {
             $initializer = new GlorotNormal();
         }
         $variable = new Variable(
@@ -172,7 +175,7 @@ class Layer implements ILayer
             initializer: $initializer,
             trainable: $trainable,
             regularizer: $regularizer,
-            requireGrad: True
+            requireGrad: true
         );
 
         if ($trainable) {
@@ -185,7 +188,7 @@ class Layer implements ILayer
     }
 
     /**
-     * @return array
+     * @return int[]
      */
     public function getInputShape(): array
     {
@@ -197,24 +200,24 @@ class Layer implements ILayer
      * @param bool $training
      * @return Variable
      */
-    function __invoke(Variable $inputs, bool $training = False): Variable
+    public function __invoke(Variable $inputs, bool $training = false): Variable
     {
         return $inputs;
     }
 
     /**
-     * @param array $inputShape
+     * @param int[] $inputShape
      * @return void
      */
-    function build(array $inputShape)
+    public function build(array $inputShape): void
     {
-        $this->built = True;
+        $this->built = true;
     }
 
     /**
-     * @return array
+     * @return int[]
      */
-    function generateOutputShape(): array
+    public function generateOutputShape(): array
     {
         return $this->inputShape;
     }

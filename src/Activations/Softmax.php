@@ -2,7 +2,7 @@
 
 namespace NumPower\Lattice\Activations;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Activations\Activation;
 use NumPower\Lattice\Core\Operation;
 use NumPower\Lattice\Core\Variable;
@@ -16,7 +16,7 @@ class Softmax extends Activation implements IGrad
      * @return Variable
      * @throws ValueErrorException
      */
-    function __invoke(Variable $inputs): Variable
+    public function __invoke(Variable $inputs): Variable
     {
         $exps = Variable::exp($inputs);
         $sum_exps = Variable::sum_axis($exps, 1, true);

@@ -16,20 +16,20 @@ class Activation extends Layer
      * @param IActivation $activation
      * @param string|null $name
      */
-    public function __construct(IActivation $activation, ?string $name = NULL)
+    public function __construct(IActivation $activation, ?string $name = null)
     {
         $this->activation = $activation;
-        $this->trainable = False;
-        ($name) ? $this->setName($name) : $this->setName("activation_".substr(uniqid(), -4));
+        $this->trainable = false;
+        ($name) ? $this->setName($name) : $this->setName("activation_" . substr(uniqid(), -4));
     }
 
     /**
-     * @param array $inputShape
+     * @param int[] $inputShape
      * @return void
      */
-    public function build(array $inputShape)
+    public function build(array $inputShape): void
     {
-        $this->built = True;
+        $this->built = true;
         $this->setInputShape($inputShape);
     }
 }

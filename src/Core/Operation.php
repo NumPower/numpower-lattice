@@ -32,7 +32,8 @@ class Operation
      * @param array $args
      * @param IGrad|null $backwardFunction
      */
-    public function __construct(string $name, array $args, ?IGrad $backwardFunction = NULL) {
+    public function __construct(string $name, array $args, ?IGrad $backwardFunction = null)
+    {
         $this->setName($name);
         $this->setArgs($args);
         $this->setBackwardFunction($backwardFunction);
@@ -76,7 +77,8 @@ class Operation
      * @param Operation $op
      * @return void
      */
-    public function setNext(Operation $op): void {
+    public function setNext(Operation $op): void
+    {
         $this->next = $op;
     }
 
@@ -170,7 +172,7 @@ class Operation
         if (isset($this->next)) {
             return $this->next;
         }
-        return NULL;
+        return null;
     }
 
     /**

@@ -8,6 +8,16 @@ use NumPower\Lattice\Models\Model;
 
 interface IOptimizer
 {
-    function __invoke(Variable $error, Model $model): void;
-    function build(IModel $model): void;
+    /**
+     * @param Variable $error
+     * @param Model $model
+     * @return void
+     */
+    public function __invoke(Variable $error, Model $model): void;
+
+    /**
+     * @param IModel $model
+     * @return void
+     */
+    public function build(IModel $model): void;
 }

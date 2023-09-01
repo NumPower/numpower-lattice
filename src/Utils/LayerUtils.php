@@ -16,7 +16,8 @@ class LayerUtils
      * @param int $nested_level
      * @return void
      */
-    private static function printLayerSummary(ILayer $layer, $positions, bool $showTrainable = True, int$nested_level = 0) {
+    private static function printLayerSummary(ILayer $layer, $positions, bool $showTrainable = true, int $nested_level = 0)
+    {
         $output_shape_str = "(";
         $output_shape = $layer->generateOutputShape();
         foreach ($output_shape as $idx => $s) {
@@ -25,21 +26,21 @@ class LayerUtils
                 continue;
             }
             if (count($output_shape) == 1) {
-                $output_shape_str .= "NULL, ".$s;
+                $output_shape_str .= "NULL, " . $s;
                 continue;
             }
-            $output_shape_str .= ','.$s;
+            $output_shape_str .= ',' . $s;
         }
         $output_shape_str .= ")";
         $name = $layer->getName();
         $class_name = explode("\\", $layer::class);
         $class_name = end($class_name);
         if (!$layer->built()) {
-            $params ="0 (unused)";
+            $params = "0 (unused)";
         } else {
             $params = $layer->countParams();
         }
-        $fields = [$name . " (". $class_name . ")", $output_shape_str, $params];
+        $fields = [$name . " (" . $class_name . ")", $output_shape_str, $params];
 
         if ($showTrainable) {
             ($layer->isTrainable()) ? $fields[] = "Y" : $fields[] = "N";
@@ -53,7 +54,8 @@ class LayerUtils
      * @param $nested_level
      * @return void
      */
-    private static function printRow($fields, $positions, $nested_level = 0) {
+    private static function printRow($fields, $positions, $nested_level = 0)
+    {
         $left_to_print = $fields;
         $field_id = 0;
         $line = "";
@@ -93,7 +95,8 @@ class LayerUtils
      * @param bool $showTrainable
      * @return void
      */
-    public static function printSummary(Model $model, bool $showTrainable = True) {
+    public static function printSummary(Model $model, bool $showTrainable = true)
+    {
         $line_length = 65;
         $positions = [0.45, 0.85, 1.0];
         $to_display = ["Layer (type)", "Output Shape", "Param #"];
@@ -104,8 +107,8 @@ class LayerUtils
             $to_display[] = "Trainable";
         }
 
-        print("Model: ". $model->getName() . "\n");
-        print(str_repeat("-", $line_length). "\n");
+        print("Model: " . $model->getName() . "\n");
+        print(str_repeat("-", $line_length) . "\n");
         self::printRow($to_display, $positions);
         print(str_repeat("=", $line_length) . "\n");
         foreach ($model->getLayers() as $layer) {
@@ -117,27 +120,28 @@ class LayerUtils
         foreach ($model->getLayers() as $layer) {
             $total_params += $layer->countParams();
         }
-        print("Total Params: ". $total_params . "\n");
+        print("Total Params: " . $total_params . "\n");
 
         $total_params = 0;
         foreach ($model->getLayers() as $layer) {
             $total_params += $layer->countTrainableParams();
         }
-        print("Total Params (Trainable): ". $total_params . "\n");
+        print("Total Params (Trainable): " . $total_params . "\n");
 
         $total_params = 0;
         foreach ($model->getLayers() as $layer) {
             $total_params += $layer->countNonTrainableParams();
         }
-        print("Total Params (Non-Trainable): ". $total_params . "\n");
-        print(str_repeat("-", $line_length). "\n");
+        print("Total Params (Non-Trainable): " . $total_params . "\n");
+        print(str_repeat("-", $line_length) . "\n");
     }
 
     /**
      * @param Variable[] $weights
      * @return int
      */
-    public static function countParams(array $weights): int {
+    public static function countParams(array $weights): int
+    {
         $w_shapes = [];
         foreach ($weights as $weight) {
             $w_shapes[] = $weight->getShape();

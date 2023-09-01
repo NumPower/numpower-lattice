@@ -2,7 +2,7 @@
 
 namespace NumPower\Lattice\Losses;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Losses\Loss;
 use NumPower\Lattice\Core\Variable;
 
@@ -13,7 +13,7 @@ class MeanSquaredError extends Loss
      * @param Variable $pred
      * @return Variable
      */
-    public function __invoke(\NDArray $true, Variable $pred): Variable
+    public function __invoke(nd $true, Variable $pred): Variable
     {
         $true = Variable::fromArray($true);
         $twos = nd::ones($pred->shape()) * 2;

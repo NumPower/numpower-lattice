@@ -11,56 +11,56 @@ interface ILayer
      * @param bool $training
      * @return Variable
      */
-    function __invoke(Variable $inputs, bool $training = False): Variable;
+    public function __invoke(Variable $inputs, bool $training = false): Variable;
 
     /**
-     * @param array $inputShape
-     * @return mixed
+     * @param int[] $inputShape
+     * @return void
      */
-    function build(array $inputShape);
+    public function build(array $inputShape): void;
 
     /**
-     * @return array
+     * @return int[]
      */
-    function generateOutputShape(): array;
+    public function generateOutputShape(): array;
 
     /**
-     * @return array
+     * @return int[]
      */
-    function getInputShape(): array;
+    public function getInputShape(): array;
 
     /**
      * @return string
      */
-    function getName(): string;
+    public function getName(): string;
 
     /**
      * @return bool
      */
-    function built(): bool;
+    public function built(): bool;
 
     /**
      * @return int
      */
-    function countParams(): int;
+    public function countParams(): int;
 
     /**
      * @return bool
      */
-    function isTrainable(): bool;
+    public function isTrainable(): bool;
 
     /**
      * @return int
      */
-    function countTrainableParams(): int;
+    public function countTrainableParams(): int;
 
     /**
      * @return int
      */
-    function countNonTrainableParams(): int;
+    public function countNonTrainableParams(): int;
 
     /**
      * @return Variable[]
      */
-    function getTrainableWeights(): array;
+    public function getTrainableWeights(): array;
 }

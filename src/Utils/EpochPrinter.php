@@ -15,8 +15,9 @@ class EpochPrinter
      * @param string $device
      * @return void
      */
-    public function start(int $epoch, int $total_epochs, string $device) {
-        print("\e[107m\e[30m Epoch ". $epoch + 1 . "/$total_epochs [".$device."] \e[0m\n");
+    public function start(int $epoch, int $total_epochs, string $device)
+    {
+        print("\e[107m\e[30m Epoch " . $epoch + 1 . "/$total_epochs [" . $device . "] \e[0m\n");
         $this->startTime = time();
     }
 
@@ -25,7 +26,8 @@ class EpochPrinter
      * @param int $total
      * @return void
      */
-    public function update(int $current, int $total): void {
+    public function update(int $current, int $total): void
+    {
         $string = "";
         $rotatingCharacters = ["\u{25DC}", "\u{25DD}", "\u{25DE}", "\u{25DF}"];
         $totalSteps = $total;
@@ -57,7 +59,8 @@ class EpochPrinter
     /**
      * @return void
      */
-    public function stop() {
+    public function stop()
+    {
         echo "\n";
     }
 }

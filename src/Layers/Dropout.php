@@ -2,7 +2,8 @@
 
 namespace NumPower\Lattice\Layers;
 
-use \NDArray as nd;
+use NDArray;
+use NDArray as nd;
 use NumPower\Lattice\Core\Layers\Layer;
 use NumPower\Lattice\Core\Variable;
 use NumPower\Lattice\Exceptions\ValueErrorException;
@@ -21,7 +22,7 @@ class Dropout extends Layer
     public function __construct(float $rate)
     {
         $this->setDropoutRate($rate);
-        parent::__construct('dropout_'.substr(uniqid(), -4), false);
+        parent::__construct('dropout_' . substr(uniqid(), -4));
     }
 
     /**
@@ -38,7 +39,7 @@ class Dropout extends Layer
     }
 
     /**
-     * @param array $inputShape
+     * @param int[] $inputShape
      * @return void
      */
     public function build(array $inputShape): void
@@ -52,7 +53,7 @@ class Dropout extends Layer
      * @param bool $training
      * @return Variable
      */
-    public function __invoke(Variable $inputs, bool $training = True): Variable
+    public function __invoke(Variable $inputs, bool $training = true): Variable
     {
         if (!$this->built()) {
             $this->build($inputs->getShape());
@@ -66,7 +67,7 @@ class Dropout extends Layer
     }
 
     /**
-     * @return array
+     * @return int[]
      */
     public function generateOutputShape(): array
     {

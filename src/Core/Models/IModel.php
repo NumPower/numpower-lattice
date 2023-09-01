@@ -9,6 +9,11 @@ interface IModel
     /**
      * @return ILayer[]
      */
-    function getLayers(): array;
-    function save(string $file_path): void;
+    public function getLayers(): array;
+
+    /**
+     * @param string $file_path
+     * @return void
+     */
+    public function save(string $file_path): void;
 }

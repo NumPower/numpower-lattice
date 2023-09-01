@@ -2,17 +2,17 @@
 
 namespace NumPower\Lattice\Initializers;
 
-use \NDArray as nd;
+use NDArray as nd;
 use NumPower\Lattice\Core\Initializers\Initializer;
 
 class GlorotNormal extends Initializer
 {
     /**
-     * @param array $shape
+     * @param int[] $shape
      * @param bool $use_gpu
-     * @return \NDArray
+     * @return nd
      */
-    function __invoke(array $shape, bool $use_gpu = false): \NDArray
+    public function __invoke(array $shape, bool $use_gpu = false): nd
     {
         [$fan_in, $fan_out] = [$shape[0], $shape[1]];
         $std_dev = sqrt(2.0 / ($fan_in + $fan_out));
